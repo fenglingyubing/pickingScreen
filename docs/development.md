@@ -19,6 +19,11 @@
 
 本项目是 Forge Mod，最终产物就是一个可放入 `mods/` 的 Jar 文件（并非 `java -jar` 直接运行的应用）。
 
+### 我应该用 `jar` 还是 `reobfJar`？
+
+- `./gradlew jar`：生成开发用 Jar（更偏向本地开发/CI 校验）。某些环境下放进 `mods/` 也能跑，但发布/分发不推荐只跑这个。
+- `./gradlew reobfJar`：生成**可分发**的 Mod Jar（包含重映射/混淆处理），推荐用于“发给别人/放进整合包/投放服务端”。
+
 ### 产物位置
 
 - 默认输出目录：`build/libs/`
@@ -29,6 +34,7 @@
 
 - 本地验证 + 打包（推荐）：`./gradlew clean build --no-daemon --console=plain`
 - 仅生成可分发 Jar：`./gradlew clean reobfJar --no-daemon --console=plain`
+- 只想快速拿到 Jar（不建议用于发布）：`./gradlew clean jar --no-daemon --console=plain`
 
 完成后，将 `build/libs/*.jar` 复制到客户端/整合包的 `.minecraft/mods/`（或启动器对应的实例 `mods/`）目录即可。
 
