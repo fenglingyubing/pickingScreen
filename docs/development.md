@@ -9,9 +9,28 @@
 ## 常用命令
 
 - 构建：`./gradlew build`
+- 打包 JAR（仅打包，不跑测试）：`./gradlew jar`
+- 打包可分发的 Mod JAR（含重映射/混淆，通常用于发布）：`./gradlew reobfJar`
 - 运行开发客户端：`./gradlew runClient`
 - 运行测试：`./gradlew test`
 - 清理：`./gradlew clean`
+
+## 打包 Jar（发布/分发）
+
+本项目是 Forge Mod，最终产物就是一个可放入 `mods/` 的 Jar 文件（并非 `java -jar` 直接运行的应用）。
+
+### 产物位置
+
+- 默认输出目录：`build/libs/`
+- 产物命名：`${archives_base_name}-${mod_version}.jar`（例如 `pickupfilter-0.1.0.jar`）
+- 版本号来源：`gradle.properties` 中的 `mod_version`
+
+### 推荐打包命令
+
+- 本地验证 + 打包（推荐）：`./gradlew clean build --no-daemon --console=plain`
+- 仅生成可分发 Jar：`./gradlew clean reobfJar --no-daemon --console=plain`
+
+完成后，将 `build/libs/*.jar` 复制到客户端/整合包的 `.minecraft/mods/`（或启动器对应的实例 `mods/`）目录即可。
 
 ## 测试约定
 
