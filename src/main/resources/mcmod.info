@@ -1,0 +1,17 @@
+[
+  {
+    "modid": "pickupfilter",
+    "name": "Pickup Filter (拾取筛)",
+    "description": "智能掉落物拾取/销毁过滤与快捷清理。",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["fenglingyubing"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
+
