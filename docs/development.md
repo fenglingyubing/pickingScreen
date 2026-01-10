@@ -65,6 +65,13 @@
   - `docs/usage.md`
   - `README.md`（保持“游戏内使用”摘要与默认快捷键一致）
 
+## 配置存储与作用域（规则/匹配名单）
+
+- 本模组的“规则列表/匹配名单”是**服务端配置**：同一个服务器里的所有玩家共用同一份规则与模式（客户端 GUI 只是发包修改服务端配置）。
+- 配置文件来源：`FMLPreInitializationEvent#getSuggestedConfigurationFile()`（Forge 的 `config/` 目录下）。
+  - 单人（集成服务器）：通常在客户端实例的 `.minecraft/config/pickupfilter.cfg`，因此**不同存档/不同世界也会共用**同一份规则（除非你用不同的实例目录）。
+  - 多人（专用服务器）：在服务端根目录的 `config/pickupfilter.cfg`，因此该服务器内所有玩家共用；不同服务器安装各自独立。
+
 ## GUI 开发与自测（背包按钮 / 物品匹配）
 
 - 入口：玩家背包（默认 `E`）右上角新增 “筛” 按钮，打开 `PickupFilterMatcherScreen`。
