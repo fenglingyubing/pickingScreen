@@ -20,6 +20,12 @@ public final class KeyBindingManager {
             "key.categories.pickupfilter"
     );
 
+    public static final KeyBinding OPEN_CONFIG_KEY = new KeyBinding(
+            "key.pickupfilter.open_config",
+            Keyboard.KEY_P,
+            "key.categories.pickupfilter"
+    );
+
     public static void registerKeyBindings() {
         registerKeyBindings(ClientRegistry::registerKeyBinding);
     }
@@ -27,6 +33,7 @@ public final class KeyBindingManager {
     static void registerKeyBindings(KeyBindingRegistrar registrar) {
         registrar.register(CLEAR_DROPS_KEY);
         registrar.register(TOGGLE_MODE_KEY);
+        registrar.register(OPEN_CONFIG_KEY);
     }
 
     public static boolean consumeClearDropsKeyPress() {
@@ -43,5 +50,13 @@ public final class KeyBindingManager {
 
     static boolean consumeToggleModeKeyPress(KeyPressReader keyPressReader) {
         return keyPressReader.isPressed(TOGGLE_MODE_KEY);
+    }
+
+    public static boolean consumeOpenConfigKeyPress() {
+        return consumeOpenConfigKeyPress(KeyBinding::isPressed);
+    }
+
+    static boolean consumeOpenConfigKeyPress(KeyPressReader keyPressReader) {
+        return keyPressReader.isPressed(OPEN_CONFIG_KEY);
     }
 }

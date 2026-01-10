@@ -1,8 +1,10 @@
 pickupfilter.message.cleared_drops=已清除周围掉落物
 pickupfilter.message.mode_changed=模式已切换为：%s
+pickupfilter.message.config_updated=配置已更新（规则 %s 条）
 pickupfilter.mode.destroy_matching=销毁匹配掉落物
 pickupfilter.mode.pickup_matching=拾取匹配掉落物
 pickupfilter.mode.disabled=关闭
 key.pickupfilter.clear_drops=清除附近掉落物
 key.pickupfilter.toggle_mode=切换拾取筛模式
+key.pickupfilter.open_config=打开拾取筛配置
 key.categories.pickupfilter=拾取筛

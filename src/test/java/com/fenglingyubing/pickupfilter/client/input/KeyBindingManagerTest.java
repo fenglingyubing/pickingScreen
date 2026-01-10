@@ -32,9 +32,10 @@ public class KeyBindingManagerTest {
     public void registerKeyBindings_delegatesToRegistrar() {
         List<KeyBinding> registered = new ArrayList<>();
         KeyBindingManager.registerKeyBindings(registered::add);
-        assertEquals(2, registered.size());
+        assertEquals(3, registered.size());
         assertSame(KeyBindingManager.CLEAR_DROPS_KEY, registered.get(0));
         assertSame(KeyBindingManager.TOGGLE_MODE_KEY, registered.get(1));
+        assertSame(KeyBindingManager.OPEN_CONFIG_KEY, registered.get(2));
     }
 
     @Test
@@ -61,6 +62,27 @@ public class KeyBindingManagerTest {
 
         assertFalse(KeyBindingManager.consumeToggleModeKeyPress(keyBinding -> {
             assertSame(KeyBindingManager.TOGGLE_MODE_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
+    }
+
+    @Test
+    public void openConfigKey_isP_andHasTranslationKeys() {
+        assertEquals("key.pickupfilter.open_config", KeyBindingManager.OPEN_CONFIG_KEY.getKeyDescription());
+        assertEquals("key.categories.pickupfilter", KeyBindingManager.OPEN_CONFIG_KEY.getKeyCategory());
+        assertEquals(Keyboard.KEY_P, KeyBindingManager.OPEN_CONFIG_KEY.getKeyCode());
+    }
+
+    @Test
+    public void consumeOpenConfigKeyPress_consumesTicks() {
+        AtomicInteger calls = new AtomicInteger();
+        assertTrue(KeyBindingManager.consumeOpenConfigKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.OPEN_CONFIG_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
+
+        assertFalse(KeyBindingManager.consumeOpenConfigKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.OPEN_CONFIG_KEY, keyBinding);
             return calls.getAndIncrement() == 0;
         }));
     }
