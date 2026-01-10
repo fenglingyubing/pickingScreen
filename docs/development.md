@@ -42,3 +42,15 @@
 - 在合并前运行必要构建/测试：至少 `./gradlew test`（必要时加 `./gradlew build` / `./gradlew runClient` 验证）。
 - 将改动合并到 `main`：优先保持 `main` 线性历史（快进或 rebase 后合并）；如仓库策略要求则创建 PR 并完成合并。
 - 合并完成后再次在 `main` 上确认构建/测试通过，并在备注中记录 rebase/冲突/测试/合并信息（含提交或 PR 链接）。
+
+## 检查点与验证记录（任务 4/10）
+
+- 检查点任务的目标是“在继续开发前，确认当前累计改动不会破坏构建/测试”。
+- 最小验证集：
+  - `./gradlew test --no-daemon`（记录末尾 `BUILD SUCCESSFUL` 与关键警告/失败栈）
+  - 如本次改动涉及资源打包/运行期行为：补充 `./gradlew build` 或 `./gradlew runClient`
+- 备注建议模板（用于 PR 描述或合并说明）：
+  - rebase：是否成功；如失败说明原因
+  - 冲突：文件/原因/如何以 `origin/main` 为准保留最新改动
+  - 测试：执行的命令 + 关键输出（如 `BUILD SUCCESSFUL`）
+  - 合并：合并到 `main` 的确认（提交或 PR 链接）
