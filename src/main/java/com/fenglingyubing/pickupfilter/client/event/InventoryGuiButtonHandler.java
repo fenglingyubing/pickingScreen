@@ -2,6 +2,7 @@ package com.fenglingyubing.pickupfilter.client.event;
 
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterMatcherScreen;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
+import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.network.ClientConfigSnapshotStore;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
@@ -55,14 +56,27 @@ public class InventoryGuiButtonHandler {
         int guiLeft = (gui.width - xSize) / 2;
         int guiTop = (gui.height - ySize) / 2;
 
-        int targetX = guiLeft + xSize - 22;
-        int targetY = guiTop + ySize - 22;
+        int targetX;
+        int targetY;
 
-        GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
-        if (lowestRightButton != null) {
-            targetX = getButtonX(lowestRightButton);
-            targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 6;
-            targetY = Math.min(targetY, gui.height - 22);
+        boolean hasRightSpace = guiLeft + xSize + 4 + 18 <= gui.width - 4;
+        boolean hasBottomSpace = guiTop + ySize + 4 + 18 <= gui.height - 4;
+
+        if (hasRightSpace) {
+            targetX = guiLeft + xSize + 4;
+            targetY = guiTop + ySize - 18;
+        } else if (hasBottomSpace) {
+            targetX = guiLeft + xSize - 18;
+            targetY = guiTop + ySize + 4;
+        } else {
+            targetX = guiLeft + xSize - 22;
+            targetY = guiTop + ySize - 22;
+            GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
+            if (lowestRightButton != null) {
+                targetX = getButtonX(lowestRightButton);
+                targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 6;
+                targetY = Math.min(targetY, gui.height - 22);
+            }
         }
 
         buttons.add(new GuiButton(BUTTON_ID, targetX, targetY, 18, 18, "筛"));
@@ -144,6 +158,64 @@ public class InventoryGuiButtonHandler {
                 + TextFormatting.DARK_GRAY + " @"
                 + TextFormatting.AQUA + hovered.getMetadata()
                 + TextFormatting.DARK_GRAY + "（A 快捷）"), true);
+    }
+
+    @SubscribeEvent
+    public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
+        GuiScreen gui = event.getGui();
+        if (!(gui instanceof GuiInventory)) {
+            return;
+        }
+
+        int xSize = 176;
+        int ySize = 166;
+        if (gui instanceof GuiContainer) {
+            int[] size = readGuiContainerSize((GuiContainer) gui);
+            if (size != null && size.length == 2) {
+                xSize = size[0];
+                ySize = size[1];
+            }
+        }
+        int guiLeft = (gui.width - xSize) / 2;
+        int guiTop = (gui.height - ySize) / 2;
+
+        ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
+        FilterMode mode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+        int rulesCount = snapshot == null || snapshot.getRules() == null ? 0 : snapshot.getRules().size();
+
+        int boxW = 96;
+        int boxH = 20;
+        int x;
+        int y;
+        if (guiLeft + xSize + 6 + boxW <= gui.width - 4) {
+            x = guiLeft + xSize + 6;
+            y = guiTop + 6;
+        } else {
+            x = guiLeft + 6;
+            y = guiTop + ySize + 6;
+        }
+
+        int bg = 0x88000000;
+        gui.drawRect(x, y, x + boxW, y + boxH, bg);
+        String line1 = TextFormatting.GREEN + "拾取筛" + TextFormatting.GRAY + "：" + TextFormatting.AQUA + getModeNameChinese(mode);
+        String line2 = TextFormatting.DARK_GRAY + "列表：" + TextFormatting.GRAY + rulesCount + " 条";
+        Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line1, x + 4, y + 4, 0xFFFFFF);
+        Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line2, x + 4, y + 4 + 10, 0xFFFFFF);
+    }
+
+    private static String getModeNameChinese(FilterMode mode) {
+        if (mode == null) {
+            return "关闭";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁";
+            case PICKUP_MATCHING:
+                return "拾取";
+            case DISABLED:
+            default:
+                return "关闭";
+        }
     }
 
     private static ItemStack getHoveredStack(GuiScreen gui) {

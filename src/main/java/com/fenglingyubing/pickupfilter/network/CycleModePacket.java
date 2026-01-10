@@ -47,12 +47,12 @@ public class CycleModePacket implements IMessage {
                 }
                 FilterMode newMode = store.cycleToNextMode(player);
 
-                player.sendMessage(new TextComponentTranslation(
-                        "pickupfilter.message.mode_changed",
-                        new TextComponentTranslation(newMode.getTranslationKey())
+                player.sendMessage(new net.minecraft.util.text.TextComponentString(
+                        net.minecraft.util.text.TextFormatting.GRAY + "拾取筛：模式已切换为 "
+                                + net.minecraft.util.text.TextFormatting.AQUA + getModeNameChinese(newMode)
                 ));
 
-                List<FilterRule> rules = store.getRules(player);
+                List<FilterRule> rules = store.getRulesForMode(player, newMode);
                 List<String> serialized = new ArrayList<>();
                 for (FilterRule rule : rules) {
                     if (rule != null) {
@@ -63,6 +63,21 @@ public class CycleModePacket implements IMessage {
             });
 
             return null;
+        }
+    }
+
+    private static String getModeNameChinese(FilterMode mode) {
+        if (mode == null) {
+            return "关闭";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁匹配掉落物";
+            case PICKUP_MATCHING:
+                return "拾取匹配掉落物";
+            case DISABLED:
+            default:
+                return "关闭";
         }
     }
 }

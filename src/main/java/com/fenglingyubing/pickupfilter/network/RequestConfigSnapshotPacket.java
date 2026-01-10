@@ -41,7 +41,7 @@ public class RequestConfigSnapshotPacket implements IMessage {
                 }
 
                 FilterMode mode = store.getMode(player);
-                List<FilterRule> rules = store.getRules(player);
+                List<FilterRule> rules = store.getRulesForMode(player, mode);
                 List<String> serialized = new ArrayList<>();
                 for (FilterRule rule : rules) {
                     if (rule != null) {

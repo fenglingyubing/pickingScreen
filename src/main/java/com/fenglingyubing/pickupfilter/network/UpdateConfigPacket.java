@@ -81,8 +81,11 @@ public class UpdateConfigPacket implements IMessage {
                     parsed = parsed.subList(0, 200);
                 }
 
-                store.setRules(player, parsed);
-                player.sendMessage(new TextComponentTranslation("pickupfilter.message.config_updated", parsed.size()));
+                FilterMode currentMode = store.getMode(player);
+                store.setRulesForMode(player, currentMode, parsed);
+                player.sendMessage(new net.minecraft.util.text.TextComponentString(
+                        net.minecraft.util.text.TextFormatting.GRAY + "拾取筛：已保存规则（" + parsed.size() + " 条）"
+                ));
 
                 FilterMode mode = store.getMode(player);
                 List<String> serialized = new ArrayList<>();

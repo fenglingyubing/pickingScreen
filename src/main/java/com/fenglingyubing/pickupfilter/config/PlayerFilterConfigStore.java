@@ -16,7 +16,9 @@ import java.util.UUID;
 public class PlayerFilterConfigStore {
     private static final String ROOT_KEY = "pickupfilter";
     private static final String KEY_MODE = "mode";
-    private static final String KEY_RULES = "rules";
+    private static final String KEY_RULES_PICKUP = "rules_pickup";
+    private static final String KEY_RULES_DESTROY = "rules_destroy";
+    private static final String KEY_RULES_LEGACY = "rules";
     private static final int MAX_RULES = 200;
 
     private final Map<UUID, Snapshot> cache = new HashMap<>();
@@ -39,12 +41,28 @@ public class PlayerFilterConfigStore {
         return getSnapshot(player).getMode();
     }
 
-    public List<FilterRule> getRules(EntityPlayer player) {
-        return getSnapshot(player).getRules();
+    public List<FilterRule> getPickupRules(EntityPlayer player) {
+        return getSnapshot(player).getPickupRules();
+    }
+
+    public List<FilterRule> getDestroyRules(EntityPlayer player) {
+        return getSnapshot(player).getDestroyRules();
+    }
+
+    public List<FilterRule> getRulesForMode(EntityPlayer player, FilterMode mode) {
+        FilterMode safeMode = mode == null ? FilterMode.DISABLED : mode;
+        if (safeMode == FilterMode.DESTROY_MATCHING) {
+            return getDestroyRules(player);
+        }
+        return getPickupRules(player);
     }
 
     public boolean matchesAnyRule(EntityPlayer player, String registryName, int metadata) {
-        List<FilterRule> rules = getRules(player);
+        FilterMode mode = getMode(player);
+        if (mode == null || mode == FilterMode.DISABLED) {
+            return false;
+        }
+        List<FilterRule> rules = getRulesForMode(player, mode);
         if (rules == null || rules.isEmpty()) {
             return false;
         }
@@ -65,13 +83,21 @@ public class PlayerFilterConfigStore {
 
     public void setMode(EntityPlayer player, FilterMode mode) {
         Snapshot snapshot = getSnapshot(player);
-        Snapshot updated = new Snapshot(mode == null ? FilterMode.DISABLED : mode, snapshot.getRules());
+        Snapshot updated = new Snapshot(
+                mode == null ? FilterMode.DISABLED : mode,
+                snapshot.getPickupRules(),
+                snapshot.getDestroyRules()
+        );
         saveSnapshot(player, updated);
     }
 
-    public void setRules(EntityPlayer player, List<FilterRule> rules) {
+    public void setRulesForMode(EntityPlayer player, FilterMode mode, List<FilterRule> rules) {
+        FilterMode safeMode = mode == null ? FilterMode.DISABLED : mode;
         Snapshot snapshot = getSnapshot(player);
-        Snapshot updated = new Snapshot(snapshot.getMode(), normalizeRules(rules));
+        List<FilterRule> normalized = normalizeRules(rules);
+        Snapshot updated = safeMode == FilterMode.DESTROY_MATCHING
+                ? new Snapshot(snapshot.getMode(), snapshot.getPickupRules(), normalized)
+                : new Snapshot(snapshot.getMode(), normalized, snapshot.getDestroyRules());
         saveSnapshot(player, updated);
     }
 
@@ -122,20 +148,41 @@ public class PlayerFilterConfigStore {
             mode = FilterMode.DISABLED;
         }
 
-        List<FilterRule> rules = new ArrayList<>();
-        if (root.hasKey(KEY_RULES, Constants.NBT.TAG_LIST)) {
-            NBTTagList list = root.getTagList(KEY_RULES, Constants.NBT.TAG_STRING);
+        List<FilterRule> pickupRules = new ArrayList<>();
+        if (root.hasKey(KEY_RULES_PICKUP, Constants.NBT.TAG_LIST)) {
+            NBTTagList list = root.getTagList(KEY_RULES_PICKUP, Constants.NBT.TAG_STRING);
             for (int i = 0; i < list.tagCount(); i++) {
                 FilterRule rule = FilterRule.deserialize(list.getStringTagAt(i));
-                if (rule != null && !rules.contains(rule)) {
-                    rules.add(rule);
+                if (rule != null && !pickupRules.contains(rule)) {
+                    pickupRules.add(rule);
                 }
             }
         }
-        if (rules.size() > MAX_RULES) {
-            rules = rules.subList(0, MAX_RULES);
+
+        List<FilterRule> destroyRules = new ArrayList<>();
+        if (root.hasKey(KEY_RULES_DESTROY, Constants.NBT.TAG_LIST)) {
+            NBTTagList list = root.getTagList(KEY_RULES_DESTROY, Constants.NBT.TAG_STRING);
+            for (int i = 0; i < list.tagCount(); i++) {
+                FilterRule rule = FilterRule.deserialize(list.getStringTagAt(i));
+                if (rule != null && !destroyRules.contains(rule)) {
+                    destroyRules.add(rule);
+                }
+            }
         }
-        return new Snapshot(mode, Collections.unmodifiableList(rules));
+
+        if (pickupRules.isEmpty() && destroyRules.isEmpty() && root.hasKey(KEY_RULES_LEGACY, Constants.NBT.TAG_LIST)) {
+            NBTTagList legacy = root.getTagList(KEY_RULES_LEGACY, Constants.NBT.TAG_STRING);
+            for (int i = 0; i < legacy.tagCount(); i++) {
+                FilterRule rule = FilterRule.deserialize(legacy.getStringTagAt(i));
+                if (rule != null && !pickupRules.contains(rule)) {
+                    pickupRules.add(rule);
+                }
+            }
+        }
+
+        pickupRules = normalizeRules(pickupRules);
+        destroyRules = normalizeRules(destroyRules);
+        return new Snapshot(mode, pickupRules, destroyRules);
     }
 
     private void saveSnapshot(EntityPlayer player, Snapshot snapshot) {
@@ -147,16 +194,25 @@ public class PlayerFilterConfigStore {
         FilterMode mode = snapshot.getMode() == null ? FilterMode.DISABLED : snapshot.getMode();
         root.setString(KEY_MODE, mode.getId());
 
+        root.setTag(KEY_RULES_PICKUP, toRulesTag(snapshot.getPickupRules()));
+        root.setTag(KEY_RULES_DESTROY, toRulesTag(snapshot.getDestroyRules()));
+
+        cache.put(player.getUniqueID(), new Snapshot(
+                mode,
+                normalizeRules(snapshot.getPickupRules()),
+                normalizeRules(snapshot.getDestroyRules())
+        ));
+    }
+
+    private static NBTTagList toRulesTag(List<FilterRule> rules) {
         NBTTagList list = new NBTTagList();
-        List<FilterRule> normalized = normalizeRules(snapshot.getRules());
+        List<FilterRule> normalized = normalizeRules(rules);
         for (FilterRule rule : normalized) {
             if (rule != null) {
                 list.appendTag(new NBTTagString(rule.serialize()));
             }
         }
-        root.setTag(KEY_RULES, list);
-
-        cache.put(player.getUniqueID(), new Snapshot(mode, normalized));
+        return list;
     }
 
     private static List<FilterRule> normalizeRules(List<FilterRule> rules) {
@@ -205,23 +261,29 @@ public class PlayerFilterConfigStore {
 
     public static final class Snapshot {
         private final FilterMode mode;
-        private final List<FilterRule> rules;
+        private final List<FilterRule> pickupRules;
+        private final List<FilterRule> destroyRules;
 
-        public Snapshot(FilterMode mode, List<FilterRule> rules) {
+        public Snapshot(FilterMode mode, List<FilterRule> pickupRules, List<FilterRule> destroyRules) {
             this.mode = mode;
-            this.rules = rules;
+            this.pickupRules = pickupRules == null ? Collections.emptyList() : pickupRules;
+            this.destroyRules = destroyRules == null ? Collections.emptyList() : destroyRules;
         }
 
         public static Snapshot defaults() {
-            return new Snapshot(FilterMode.DISABLED, Collections.emptyList());
+            return new Snapshot(FilterMode.DISABLED, Collections.emptyList(), Collections.emptyList());
         }
 
         public FilterMode getMode() {
             return mode;
         }
 
-        public List<FilterRule> getRules() {
-            return rules;
+        public List<FilterRule> getPickupRules() {
+            return pickupRules;
+        }
+
+        public List<FilterRule> getDestroyRules() {
+            return destroyRules;
         }
     }
 }

@@ -11,7 +11,6 @@ import com.fenglingyubing.pickupfilter.network.CycleModePacket;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
@@ -74,7 +73,7 @@ public class ClientEventHandler {
                 lastKnownMode = mode;
                 mc.player.sendStatusMessage(new TextComponentString(
                         TextFormatting.GRAY + "拾取筛：模式已切换为 "
-                                + TextFormatting.AQUA + I18n.format(mode.getTranslationKey())
+                                + TextFormatting.AQUA + getModeNameChinese(mode)
                 ), true);
             }
         }
@@ -89,6 +88,21 @@ public class ClientEventHandler {
         introChecked = true;
         if (!PickupFilterClient.getClientSettings().isIntroShown()) {
             mc.displayGuiScreen(new PickupFilterIntroScreen());
+        }
+    }
+
+    private static String getModeNameChinese(FilterMode mode) {
+        if (mode == null) {
+            return "关闭";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁匹配掉落物";
+            case PICKUP_MATCHING:
+                return "拾取匹配掉落物";
+            case DISABLED:
+            default:
+                return "关闭";
         }
     }
 }

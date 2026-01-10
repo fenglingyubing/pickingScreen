@@ -1,6 +1,7 @@
 package com.fenglingyubing.pickupfilter.client.gui;
 
 import com.fenglingyubing.pickupfilter.config.FilterRule;
+import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.network.ClientConfigSnapshotStore;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
@@ -56,6 +57,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     private String status = TextFormatting.DARK_GRAY + "同步中…";
     private int lastSnapshotRevision = -1;
     private boolean dirty;
+    private FilterMode currentMode = FilterMode.DISABLED;
 
     private int guiLeft;
     private int guiTop;
@@ -97,7 +99,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         backButton = addButton(new GuiButton(4, guiLeft + 6, headerButtonY, 18, 18, "<"));
         openConfigButton = addButton(new GuiButton(3, guiLeft + X_SIZE - 6 - 18, headerButtonY, 18, 18, "配"));
         clearButton = addButton(new GuiButton(2, guiLeft + X_SIZE - 6 - 18 * 2 - 2, headerButtonY, 18, 18, "清"));
-        applyButton = addButton(new GuiButton(1, guiLeft + X_SIZE - 6 - 18 * 3 - 4, headerButtonY, 18, 18, "应"));
+        applyButton = addButton(new GuiButton(1, guiLeft + X_SIZE - 6 - 18 * 3 - 4, headerButtonY, 18, 18, "存"));
 
         int pagerY = rulesY - 12;
         prevPageButton = addButton(new GuiButton(5, guiLeft + X_SIZE - 6 - 14 * 2 - 2, pagerY, 14, 14, "<"));
@@ -105,6 +107,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
         if (snapshot != null && snapshot.getRules() != null && !snapshot.getRules().isEmpty()) {
+            currentMode = snapshot.getMode() == null ? FilterMode.DISABLED : snapshot.getMode();
             loadFromSnapshot(snapshot);
         }
         requestSnapshot();
@@ -135,7 +138,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             itemRules.clear();
             pageIndex = 0;
             dirty = true;
-            status = TextFormatting.DARK_GRAY + "已清空物品列表（保留高级规则 " + hiddenRulesCount + " 条）";
+            autoSave(TextFormatting.DARK_GRAY + "已清空物品列表（保留高级规则 " + hiddenRulesCount + " 条）");
             return;
         }
 
@@ -179,6 +182,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             int count = snapshot == null || snapshot.getRules() == null ? 0 : snapshot.getRules().size();
             status = TextFormatting.DARK_GRAY + "已同步：规则 " + count + " 条";
             if (!dirty && snapshot != null) {
+                currentMode = snapshot.getMode() == null ? FilterMode.DISABLED : snapshot.getMode();
                 loadFromSnapshot(snapshot);
             }
         }
@@ -227,7 +231,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
                 if (index >= 0 && index < itemRules.size()) {
                     FilterRule removed = itemRules.remove(index);
                     dirty = true;
-                    status = TextFormatting.DARK_GRAY + "已移除：" + (removed == null ? "" : removed.serialize());
+                    autoSave(TextFormatting.DARK_GRAY + "已移除：" + (removed == null ? "" : removed.serialize()));
                 }
                 return;
             }
@@ -272,13 +276,13 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
         itemRules.add(rule);
         dirty = true;
-        status = TextFormatting.GRAY + "已添加："
+        autoSave(TextFormatting.GRAY + "已添加："
                 + TextFormatting.AQUA + registryName.getNamespace()
                 + TextFormatting.GRAY + ":"
                 + TextFormatting.AQUA + registryName.getPath()
                 + TextFormatting.DARK_GRAY + " @"
                 + TextFormatting.AQUA + stack.getMetadata()
-                + TextFormatting.DARK_GRAY + "（右键上方格子可移除）";
+                + TextFormatting.DARK_GRAY + "（右键上方格子可移除）");
     }
 
     @Override
@@ -306,7 +310,9 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         drawRect(guiLeft + 1, guiTop + 1, guiLeft + X_SIZE - 1, guiTop + HEADER_H, 0xFFF0EFED);
         drawRect(guiLeft + 1, guiTop + HEADER_H, guiLeft + X_SIZE - 1, guiTop + HEADER_H + 1, 0xFFCEC9C4);
 
-        drawCenteredString(fontRenderer, TextFormatting.BOLD + "FltPick", guiLeft + X_SIZE / 2, guiTop + 7, COLOR_TEXT);
+        drawCenteredString(fontRenderer, TextFormatting.BOLD + "拾取筛", guiLeft + X_SIZE / 2, guiTop + 7, COLOR_TEXT);
+        String modeLabel = TextFormatting.DARK_GRAY + "当前：" + TextFormatting.GRAY + getListNameForMode(currentMode);
+        drawString(fontRenderer, modeLabel, guiLeft + 6, guiTop + 7, COLOR_MUTED);
 
         drawRulesGrid(mouseX, mouseY);
         drawInventory(mouseX, mouseY);
@@ -316,8 +322,8 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
         int hintY = guiTop + ySize - 12;
         String hint = hiddenRulesCount > 0
-                ? TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；未显示高级规则 " + hiddenRulesCount + " 条"
-                : TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；点“应”保存";
+                ? TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；自动保存；未显示高级规则 " + hiddenRulesCount + " 条"
+                : TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；自动保存";
         drawString(fontRenderer, hint, guiLeft + 6, hintY, COLOR_MUTED);
         drawString(fontRenderer, status == null ? "" : status, guiLeft + 6, hintY - 10, COLOR_MUTED);
 
@@ -473,6 +479,31 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         }
         hiddenRulesCount = hiddenRules.size();
         pageIndex = Math.min(pageIndex, Math.max(0, getTotalPages() - 1));
+    }
+
+    private void autoSave(String newStatus) {
+        if (newStatus != null) {
+            status = newStatus;
+        }
+        List<FilterRule> toSend = composeRulesToSend();
+        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(toSend));
+        dirty = false;
+        requestSnapshot();
+    }
+
+    private static String getListNameForMode(FilterMode mode) {
+        if (mode == null) {
+            return "拾取匹配列表";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁匹配列表";
+            case PICKUP_MATCHING:
+                return "拾取匹配列表";
+            case DISABLED:
+            default:
+                return "拾取匹配列表（当前模式：关闭）";
+        }
     }
 
     private List<FilterRule> composeRulesToSend() {

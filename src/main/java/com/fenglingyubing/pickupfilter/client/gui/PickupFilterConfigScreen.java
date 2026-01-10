@@ -14,7 +14,6 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.GuiSlot;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
@@ -110,7 +109,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
         if (button.id == 1) {
             if (editor.addRuleFromUserInput(ruleInput.getText())) {
                 ruleInput.setText("");
-                status = TextFormatting.GRAY + "已添加（未应用）";
+                status = TextFormatting.GRAY + "已添加并保存…";
+                sendRulesUpdate();
             } else {
                 status = TextFormatting.RED + "规则无效或已存在";
             }
@@ -130,7 +130,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
             }
             FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), held.getMetadata(), false);
             if (editor.addRule(rule)) {
-                status = TextFormatting.GRAY + "已添加手持物品（未应用）";
+                status = TextFormatting.GRAY + "已添加手持物品并保存…";
+                sendRulesUpdate();
             } else {
                 status = TextFormatting.RED + "规则已存在";
             }
@@ -147,7 +148,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
         if (button.id == 4) {
             if (editor.removeSelected()) {
-                status = TextFormatting.GRAY + "已删除（未应用）";
+                status = TextFormatting.GRAY + "已删除并保存…";
+                sendRulesUpdate();
             } else {
                 status = TextFormatting.RED + "未选择规则";
             }
@@ -155,10 +157,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
         }
 
         if (button.id == 5) {
-            List<FilterRule> rules = editor.getRules();
-            PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(rules));
-            status = TextFormatting.GRAY + "已发送配置更新…";
-            requestSnapshot();
+            sendRulesUpdate();
+            status = TextFormatting.GRAY + "已手动同步…";
             return;
         }
 
@@ -173,11 +173,32 @@ public class PickupFilterConfigScreen extends GuiScreen {
         updateModeButton();
     }
 
+    private void sendRulesUpdate() {
+        List<FilterRule> rules = editor.getRules();
+        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(rules));
+        requestSnapshot();
+    }
+
     private void updateModeButton() {
         if (cycleModeButton != null) {
-            String modeName = mode == null ? "?" : I18n.format(mode.getTranslationKey());
+            String modeName = getModeNameChinese(mode);
             String label = "模式：" + modeName;
             cycleModeButton.displayString = label;
+        }
+    }
+
+    private static String getModeNameChinese(FilterMode mode) {
+        if (mode == null) {
+            return "关闭";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁匹配掉落物";
+            case PICKUP_MATCHING:
+                return "拾取匹配掉落物";
+            case DISABLED:
+            default:
+                return "关闭";
         }
     }
 
