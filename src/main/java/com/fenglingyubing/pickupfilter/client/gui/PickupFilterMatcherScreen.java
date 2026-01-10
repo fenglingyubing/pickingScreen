@@ -320,13 +320,17 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             return;
         }
 
-        FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), stack.getMetadata(), false);
+        FilterRule rule = FilterRule.fromItemStack(stack);
+        if (rule == null) {
+            status = TextFormatting.RED + "无法生成规则";
+            return;
+        }
         if (!canDisplayRule(rule)) {
             status = TextFormatting.RED + "该物品无法添加（注册名异常）";
             return;
         }
 
-        if (itemRules.contains(rule) || hiddenRules.contains(rule)) {
+        if (containsEquivalentRule(itemRules, rule, stack) || containsEquivalentRule(hiddenRules, rule, stack)) {
             status = TextFormatting.DARK_GRAY + "已在列表中";
             return;
         }
@@ -337,12 +341,13 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         }
 
         itemRules.add(rule);
+        String metaText = rule.getMetadata() == FilterRule.ANY_METADATA ? "*" : Integer.toString(rule.getMetadata());
         autoSave(TextFormatting.GRAY + "已添加："
                 + TextFormatting.AQUA + registryName.getNamespace()
                 + TextFormatting.GRAY + ":"
                 + TextFormatting.AQUA + registryName.getPath()
                 + TextFormatting.DARK_GRAY + " @"
-                + TextFormatting.AQUA + stack.getMetadata()
+                + TextFormatting.AQUA + metaText
                 + TextFormatting.DARK_GRAY + "（右键匹配列表可移除）");
     }
 
@@ -367,6 +372,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
         GlStateManager.disableLighting();
         super.drawScreen(mouseX, mouseY, partialTicks);
+        drawHoveredTooltip(mouseX, mouseY);
     }
 
     private void drawPanel() {
@@ -419,14 +425,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
                 }
 
                 if (isPointInRect(x, y, SLOT, SLOT, mouseX, mouseY)) {
-                    if (icon != null && !icon.isEmpty()) {
-                        renderToolTip(icon, mouseX, mouseY);
-                    } else if (rule != null) {
-                        List<String> lines = new ArrayList<>();
-                        lines.add(TextFormatting.GRAY + "规则：" + TextFormatting.AQUA + rule.serialize());
-                        lines.add(TextFormatting.DARK_GRAY + "右键移除");
-                        drawHoveringText(lines, mouseX, mouseY);
-                    }
+                    drawSlotHighlight(x, y);
                 }
             }
         }
@@ -455,11 +454,73 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             }
 
             if (isPointInRect(x, y, SLOT, SLOT, mouseX, mouseY)) {
-                if (stack != null && !stack.isEmpty()) {
-                    renderToolTip(stack, mouseX, mouseY);
-                }
+                drawSlotHighlight(x, y);
             }
         }
+    }
+
+    private void drawSlotHighlight(int x, int y) {
+        int left = x;
+        int top = y;
+        int right = x + SLOT;
+        int bottom = y + SLOT;
+        drawGradientRect(left, top, right, bottom, 0x30FFFFFF, 0x18FFFFFF);
+        drawRect(left, top, right, top + 1, 0x60FFE8A0);
+        drawRect(left, bottom - 1, right, bottom, 0x60FFE8A0);
+        drawRect(left, top, left + 1, bottom, 0x60FFE8A0);
+        drawRect(right - 1, top, right, bottom, 0x60FFE8A0);
+    }
+
+    private void drawHoveredTooltip(int mouseX, int mouseY) {
+        RenderHelper.disableStandardItemLighting();
+        GlStateManager.disableLighting();
+
+        int ruleSlot = getRuleSlotAt(mouseX, mouseY);
+        if (ruleSlot >= 0) {
+            int index = pageIndex * RULES_PER_PAGE + ruleSlot;
+            if (index >= 0 && index < itemRules.size()) {
+                FilterRule rule = itemRules.get(index);
+                ItemStack icon = createIcon(rule);
+                if (icon != null && !icon.isEmpty()) {
+                    renderToolTip(icon, mouseX, mouseY);
+                } else if (rule != null) {
+                    List<String> lines = new ArrayList<>();
+                    lines.add(TextFormatting.GRAY + "规则：" + TextFormatting.AQUA + rule.serialize());
+                    lines.add(TextFormatting.DARK_GRAY + "右键移除");
+                    drawHoveringText(lines, mouseX, mouseY);
+                }
+                return;
+            }
+        }
+
+        int invSlot = getInventoryDisplayIndexAt(mouseX, mouseY);
+        if (invSlot >= 0) {
+            ItemStack stack = getDisplayedInventoryStack(invSlot);
+            if (stack != null && !stack.isEmpty()) {
+                renderToolTip(stack, mouseX, mouseY);
+            }
+        }
+    }
+
+    private static boolean containsEquivalentRule(List<FilterRule> rules, FilterRule candidate, ItemStack stack) {
+        if (rules == null || rules.isEmpty() || candidate == null || stack == null || stack.isEmpty() || stack.getItem() == null) {
+            return false;
+        }
+        if (rules.contains(candidate)) {
+            return true;
+        }
+        if (stack.getItem().getHasSubtypes() || !stack.isItemStackDamageable()) {
+            return false;
+        }
+        for (FilterRule existing : rules) {
+            if (existing == null || existing.isUseWildcard()) {
+                continue;
+            }
+            if (candidate.getModId().equals(existing.getModId()) && candidate.getItemName().equals(existing.getItemName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int getRuleSlotAt(int mouseX, int mouseY) {

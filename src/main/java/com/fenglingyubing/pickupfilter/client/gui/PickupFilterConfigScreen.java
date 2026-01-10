@@ -133,7 +133,11 @@ public class PickupFilterConfigScreen extends GuiScreen {
                 status = TextFormatting.RED + "无法读取物品注册名";
                 return;
             }
-            FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), held.getMetadata(), false);
+            FilterRule rule = FilterRule.fromItemStack(held);
+            if (rule == null) {
+                status = TextFormatting.RED + "无法生成规则";
+                return;
+            }
             if (editor.addRule(rule)) {
                 status = TextFormatting.GRAY + "已添加手持物品并保存…";
                 sendRulesUpdate();

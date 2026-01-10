@@ -154,18 +154,23 @@ public class InventoryGuiButtonHandler {
             return;
         }
 
-        FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), hovered.getMetadata(), false);
+        FilterRule rule = FilterRule.fromItemStack(hovered);
+        if (rule == null) {
+            mc.player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "无法生成规则"), true);
+            return;
+        }
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
         FilterMode activeMode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
         List<FilterRule> existing = snapshot == null ? null : snapshot.getRulesForMode(activeMode);
-        boolean alreadyExists = existing != null && existing.contains(rule);
+        boolean alreadyExists = existing != null && containsEquivalentRule(existing, rule, hovered);
         if (alreadyExists) {
+            String metaText = rule.getMetadata() == FilterRule.ANY_METADATA ? "*" : Integer.toString(rule.getMetadata());
             mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "已在规则中："
                     + TextFormatting.AQUA + registryName.getNamespace()
                     + TextFormatting.DARK_GRAY + ":"
                     + TextFormatting.AQUA + registryName.getPath()
                     + TextFormatting.DARK_GRAY + " @"
-                    + TextFormatting.AQUA + hovered.getMetadata()), true);
+                    + TextFormatting.AQUA + metaText), true);
             return;
         }
 
@@ -174,13 +179,35 @@ public class InventoryGuiButtonHandler {
         PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(activeMode, merged));
         PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
         String listName = activeMode == FilterMode.DESTROY_MATCHING ? "销毁列表" : "拾取列表";
+        String metaText = rule.getMetadata() == FilterRule.ANY_METADATA ? "*" : Integer.toString(rule.getMetadata());
         mc.player.sendStatusMessage(new TextComponentString(TextFormatting.GRAY + "已添加到" + listName + "："
                 + TextFormatting.AQUA + registryName.getNamespace()
                 + TextFormatting.GRAY + ":"
                 + TextFormatting.AQUA + registryName.getPath()
                 + TextFormatting.DARK_GRAY + " @"
-                + TextFormatting.AQUA + hovered.getMetadata()
+                + TextFormatting.AQUA + metaText
                 + TextFormatting.DARK_GRAY + "（A 快捷）"), true);
+    }
+
+    private static boolean containsEquivalentRule(List<FilterRule> rules, FilterRule candidate, ItemStack stack) {
+        if (rules == null || rules.isEmpty() || candidate == null || stack == null || stack.isEmpty() || stack.getItem() == null) {
+            return false;
+        }
+        if (rules.contains(candidate)) {
+            return true;
+        }
+        if (stack.getItem().getHasSubtypes() || !stack.isItemStackDamageable()) {
+            return false;
+        }
+        for (FilterRule existing : rules) {
+            if (existing == null || existing.isUseWildcard()) {
+                continue;
+            }
+            if (candidate.getModId().equals(existing.getModId()) && candidate.getItemName().equals(existing.getItemName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SubscribeEvent

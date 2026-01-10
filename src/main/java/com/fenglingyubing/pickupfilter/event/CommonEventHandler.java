@@ -5,7 +5,6 @@ import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
@@ -100,10 +99,6 @@ public class CommonEventHandler {
         if (item == null || item.isEmpty() || item.getItem() == null) {
             return false;
         }
-        ResourceLocation registryName = item.getItem().getRegistryName();
-        if (registryName == null) {
-            return false;
-        }
-        return configStore.matchesAnyRule(player, registryName.toString(), item.getMetadata());
+        return configStore.matchesAnyRule(player, item);
     }
 }

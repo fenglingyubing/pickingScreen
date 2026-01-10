@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.item.ItemStack;
 
 public class PlayerFilterConfigStore {
     private static final String ROOT_KEY = "pickupfilter";
@@ -55,6 +56,26 @@ public class PlayerFilterConfigStore {
             return getDestroyRules(player);
         }
         return getPickupRules(player);
+    }
+
+    public boolean matchesAnyRule(EntityPlayer player, ItemStack item) {
+        if (item == null || item.isEmpty() || item.getItem() == null) {
+            return false;
+        }
+        FilterMode mode = getMode(player);
+        if (mode == null || mode == FilterMode.DISABLED) {
+            return false;
+        }
+        List<FilterRule> rules = getRulesForMode(player, mode);
+        if (rules == null || rules.isEmpty()) {
+            return false;
+        }
+        for (FilterRule rule : rules) {
+            if (rule != null && rule.matches(item)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean matchesAnyRule(EntityPlayer player, String registryName, int metadata) {

@@ -42,11 +42,31 @@ public final class FilterRule {
         if (item == null) {
             return false;
         }
+        if (item.isEmpty() || item.getItem() == null) {
+            return false;
+        }
         ResourceLocation registryName = item.getItem().getRegistryName();
         if (registryName == null) {
             return false;
         }
-        return matches(registryName.toString(), item.getMetadata());
+
+        String actualModId = normalizePart(registryName.getNamespace());
+        String actualItemName = normalizePart(registryName.getPath());
+
+        if (!matchesPart(modId, actualModId, false)) {
+            return false;
+        }
+        if (!matchesPart(itemName, actualItemName, useWildcard)) {
+            return false;
+        }
+
+        if (this.metadata == ANY_METADATA) {
+            return true;
+        }
+        if (!item.getItem().getHasSubtypes() && item.isItemStackDamageable()) {
+            return true;
+        }
+        return this.metadata == item.getMetadata();
     }
 
     public boolean matches(String registryName, int metadata) {
@@ -70,6 +90,28 @@ public final class FilterRule {
             return false;
         }
         return this.metadata == ANY_METADATA || this.metadata == metadata;
+    }
+
+    public static FilterRule fromItemStack(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem() == null) {
+            return null;
+        }
+        ResourceLocation registryName = stack.getItem().getRegistryName();
+        if (registryName == null) {
+            return null;
+        }
+        int metadata = normalizeMetadataForRule(stack);
+        return new FilterRule(registryName.getNamespace(), registryName.getPath(), metadata, false);
+    }
+
+    private static int normalizeMetadataForRule(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem() == null) {
+            return ANY_METADATA;
+        }
+        if (!stack.getItem().getHasSubtypes() && stack.isItemStackDamageable()) {
+            return ANY_METADATA;
+        }
+        return stack.getMetadata();
     }
 
     public String serialize() {
