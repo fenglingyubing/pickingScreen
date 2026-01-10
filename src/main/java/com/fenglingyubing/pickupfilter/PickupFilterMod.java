@@ -1,6 +1,7 @@
 package com.fenglingyubing.pickupfilter;
 
 import com.fenglingyubing.pickupfilter.config.ConfigManager;
+import com.fenglingyubing.pickupfilter.config.ModeSwitching;
 import com.fenglingyubing.pickupfilter.event.CommonEventHandler;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.proxy.CommonProxy;
@@ -36,17 +37,23 @@ public class PickupFilterMod {
 
     private ConfigManager configManager;
     private CommonEventHandler eventHandler;
+    private ModeSwitching modeSwitching;
 
     public ConfigManager getConfigManager() {
         return configManager;
     }
 
+    public ModeSwitching getModeSwitching() {
+        return modeSwitching;
+    }
+
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         File configFile = event.getSuggestedConfigurationFile();
-        this.configManager = new ConfigManager(configFile);
-        this.configManager.load();
-        this.eventHandler = new CommonEventHandler(this.configManager);
+        PickupFilterComponents components = PickupFilterComponents.bootstrap(configFile);
+        this.configManager = components.getConfigManager();
+        this.eventHandler = components.getCommonEventHandler();
+        this.modeSwitching = components.getModeSwitching();
         PickupFilterNetwork.init();
         proxy.preInit(event);
     }

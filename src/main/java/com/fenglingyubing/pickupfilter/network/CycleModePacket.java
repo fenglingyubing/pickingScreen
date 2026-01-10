@@ -1,8 +1,8 @@
 package com.fenglingyubing.pickupfilter.network;
 
 import com.fenglingyubing.pickupfilter.PickupFilterMod;
-import com.fenglingyubing.pickupfilter.config.ConfigModeSwitching;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
+import com.fenglingyubing.pickupfilter.config.ModeSwitching;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -37,8 +37,11 @@ public class CycleModePacket implements IMessage {
                     return;
                 }
 
-                FilterMode newMode = new ConfigModeSwitching(PickupFilterMod.instance.getConfigManager())
-                        .cycleToNextMode();
+                ModeSwitching modeSwitching = PickupFilterMod.instance.getModeSwitching();
+                if (modeSwitching == null) {
+                    return;
+                }
+                FilterMode newMode = modeSwitching.cycleToNextMode();
 
                 player.sendMessage(new TextComponentTranslation(
                         "pickupfilter.message.mode_changed",
