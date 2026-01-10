@@ -30,6 +30,15 @@
 - 产物命名：`${archives_base_name}-${mod_version}.jar`（例如 `pickupfilter-0.1.0.jar`）
 - 版本号来源：`gradle.properties` 中的 `mod_version`
 
+### 为什么会有两个 Jar（`*-sources.jar` 是什么）？
+
+通常你会在 `build/libs/` 看到两类产物：
+
+- `pickupfilter-0.1.0.jar`：**Mod 本体**（要放进 `mods/` 的就是它）
+- `pickupfilter-0.1.0-sources.jar`：**源码包**（给开发者/IDE 用的，用于“附加源码/跳转到源码/调试”，不需要也不应该放进 `mods/`）
+
+结论：玩家安装/联机只需要 `pickupfilter-*.jar`；`*-sources.jar` 仅用于开发调试或发布到 Maven 供他人引用时的“源码附件”。
+
 ### 推荐打包命令
 
 - 本地验证 + 打包（推荐）：`./gradlew clean build --no-daemon --console=plain`
