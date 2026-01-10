@@ -6,7 +6,6 @@ import com.fenglingyubing.pickupfilter.proxy.CommonProxy;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -22,10 +21,10 @@ import java.io.File;
 )
 public class PickupFilterMod {
     public static final String MODID = "pickupfilter";
-    public static final String NAME = "Pickup Filter";
+    public static final String NAME = "Pickup Filter (拾取筛)";
     public static final String VERSION = "0.1.0";
 
-    @Instance(MODID)
+    @Mod.Instance(MODID)
     public static PickupFilterMod instance;
 
     @SidedProxy(
@@ -57,4 +56,3 @@ public class PickupFilterMod {
         proxy.postInit(event);
     }
 }
-

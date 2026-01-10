@@ -17,6 +17,7 @@
 
 - `src/main/java`：模组代码
   - `com.fenglingyubing.pickupfilter`：主入口与跨模块协调
+  - `proxy/`：Common/Client 代理（客户端类隔离）
   - `config/`：配置与模式状态
   - `event/`：服务端/通用事件处理（不引用客户端类）
   - `client/`：客户端相关（按键、GUI、反馈）
@@ -27,3 +28,11 @@
 
 - 客户端类只放在 `client/` 下，并通过 `ClientProxy` 注册，避免专用服务器类加载崩溃。
 - 业务逻辑优先放在可测试的纯 Java 类中（后续任务会补齐测试框架与属性测试）。
+
+## Git 流程（提交/合并）
+
+- 开发完成后先同步主分支：`git fetch origin main`，并将当前分支 `rebase` 到最新 `origin/main`。
+- 如有冲突：以 `origin/main` 的最新改动为准再合并本分支需要的变更；解决后继续 `rebase`，并在提交说明中简述冲突处理结果。
+- 在合并前运行必要构建/测试：至少 `./gradlew test`（必要时加 `./gradlew build` / `./gradlew runClient` 验证）。
+- 将改动合并到 `main`：优先保持 `main` 线性历史（快进或 rebase 后合并）；如仓库策略要求则创建 PR 并完成合并。
+- 合并完成后再次在 `main` 上确认构建/测试通过，并在备注中记录 rebase/冲突/测试/合并信息（含提交或 PR 链接）。
