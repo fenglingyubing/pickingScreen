@@ -1,7 +1,7 @@
 package com.fenglingyubing.pickupfilter.event;
 
-import com.fenglingyubing.pickupfilter.config.ConfigManager;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
+import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -9,16 +9,18 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.List;
 
 public class CommonEventHandler {
-    private final ConfigManager configManager;
+    private final PlayerFilterConfigStore configStore;
     private static final double AUTO_DESTROY_RANGE = 1.5D;
 
-    public CommonEventHandler(ConfigManager configManager) {
-        this.configManager = configManager;
+    public CommonEventHandler(PlayerFilterConfigStore configStore) {
+        this.configStore = configStore;
     }
 
     @SubscribeEvent
@@ -28,11 +30,11 @@ public class CommonEventHandler {
             return;
         }
 
-        FilterMode mode = configManager.getCurrentMode();
+        FilterMode mode = configStore.getMode(player);
         EntityItem entityItem = event.getItem();
         ItemStack item = entityItem == null ? ItemStack.EMPTY : entityItem.getItem();
 
-        boolean matchesFilter = matchesFilter(item);
+        boolean matchesFilter = matchesFilter(player, item);
         if (ItemActionPolicy.shouldCancelPickup(mode, matchesFilter)) {
             event.setCanceled(true);
         }
@@ -48,7 +50,7 @@ public class CommonEventHandler {
             return;
         }
 
-        FilterMode mode = configManager.getCurrentMode();
+        FilterMode mode = configStore.getMode(player);
         if (mode != FilterMode.DESTROY_MATCHING) {
             return;
         }
@@ -61,13 +63,40 @@ public class CommonEventHandler {
             }
 
             ItemStack item = drop.getItem();
-            if (ItemActionPolicy.shouldDestroyDrop(mode, matchesFilter(item))) {
+            if (ItemActionPolicy.shouldDestroyDrop(mode, matchesFilter(player, item))) {
                 drop.setDead();
             }
         }
     }
 
-    private boolean matchesFilter(ItemStack item) {
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onPlayerClone(PlayerEvent.Clone event) {
+        if (event == null) {
+            return;
+        }
+        EntityPlayer original = event.getOriginal();
+        EntityPlayer player = event.getEntityPlayer();
+        if (original == null || player == null) {
+            return;
+        }
+        if (player.world == null || player.world.isRemote) {
+            return;
+        }
+        configStore.copyPersistedData(original, player);
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event == null || event.player == null) {
+            return;
+        }
+        if (event.player.world == null || event.player.world.isRemote) {
+            return;
+        }
+        configStore.invalidate(event.player);
+    }
+
+    private boolean matchesFilter(EntityPlayer player, ItemStack item) {
         if (item == null || item.isEmpty() || item.getItem() == null) {
             return false;
         }
@@ -75,6 +104,6 @@ public class CommonEventHandler {
         if (registryName == null) {
             return false;
         }
-        return configManager.matchesAnyRule(registryName.toString(), item.getMetadata());
+        return configStore.matchesAnyRule(player, registryName.toString(), item.getMetadata());
     }
 }

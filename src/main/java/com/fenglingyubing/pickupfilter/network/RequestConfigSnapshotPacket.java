@@ -1,9 +1,9 @@
 package com.fenglingyubing.pickupfilter.network;
 
 import com.fenglingyubing.pickupfilter.PickupFilterMod;
-import com.fenglingyubing.pickupfilter.config.ConfigManager;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
+import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -35,13 +35,13 @@ public class RequestConfigSnapshotPacket implements IMessage {
                 if (PickupFilterMod.instance == null) {
                     return;
                 }
-                ConfigManager configManager = PickupFilterMod.instance.getConfigManager();
-                if (configManager == null) {
+                PlayerFilterConfigStore store = PickupFilterMod.instance.getPlayerConfigStore();
+                if (store == null) {
                     return;
                 }
 
-                FilterMode mode = configManager.getCurrentMode();
-                List<FilterRule> rules = configManager.getFilterRules();
+                FilterMode mode = store.getMode(player);
+                List<FilterRule> rules = store.getRules(player);
                 List<String> serialized = new ArrayList<>();
                 for (FilterRule rule : rules) {
                     if (rule != null) {
@@ -56,4 +56,3 @@ public class RequestConfigSnapshotPacket implements IMessage {
         }
     }
 }
-

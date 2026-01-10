@@ -1,7 +1,6 @@
 package com.fenglingyubing.pickupfilter;
 
-import com.fenglingyubing.pickupfilter.config.ConfigManager;
-import com.fenglingyubing.pickupfilter.config.ModeSwitching;
+import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import com.fenglingyubing.pickupfilter.event.CommonEventHandler;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.proxy.CommonProxy;
@@ -12,8 +11,6 @@ import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-
-import java.io.File;
 
 @Mod(
         modid = PickupFilterMod.MODID,
@@ -35,25 +32,18 @@ public class PickupFilterMod {
     )
     public static CommonProxy proxy;
 
-    private ConfigManager configManager;
+    private PlayerFilterConfigStore playerConfigStore;
     private CommonEventHandler eventHandler;
-    private ModeSwitching modeSwitching;
 
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-
-    public ModeSwitching getModeSwitching() {
-        return modeSwitching;
+    public PlayerFilterConfigStore getPlayerConfigStore() {
+        return playerConfigStore;
     }
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        File configFile = event.getSuggestedConfigurationFile();
-        PickupFilterComponents components = PickupFilterComponents.bootstrap(configFile);
-        this.configManager = components.getConfigManager();
+        PickupFilterComponents components = PickupFilterComponents.bootstrap();
+        this.playerConfigStore = components.getPlayerConfigStore();
         this.eventHandler = components.getCommonEventHandler();
-        this.modeSwitching = components.getModeSwitching();
         PickupFilterNetwork.init();
         proxy.preInit(event);
     }

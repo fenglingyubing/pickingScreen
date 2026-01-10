@@ -1,8 +1,9 @@
 package com.fenglingyubing.pickupfilter.network;
 
 import com.fenglingyubing.pickupfilter.PickupFilterMod;
-import com.fenglingyubing.pickupfilter.config.ConfigManager;
+import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
+import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -61,8 +62,8 @@ public class UpdateConfigPacket implements IMessage {
                 if (PickupFilterMod.instance == null) {
                     return;
                 }
-                ConfigManager configManager = PickupFilterMod.instance.getConfigManager();
-                if (configManager == null) {
+                PlayerFilterConfigStore store = PickupFilterMod.instance.getPlayerConfigStore();
+                if (store == null) {
                     return;
                 }
 
@@ -80,13 +81,20 @@ public class UpdateConfigPacket implements IMessage {
                     parsed = parsed.subList(0, 200);
                 }
 
-                configManager.setFilterRules(parsed);
-                configManager.saveConfig();
+                store.setRules(player, parsed);
                 player.sendMessage(new TextComponentTranslation("pickupfilter.message.config_updated", parsed.size()));
+
+                FilterMode mode = store.getMode(player);
+                List<String> serialized = new ArrayList<>();
+                for (FilterRule rule : parsed) {
+                    if (rule != null) {
+                        serialized.add(rule.serialize());
+                    }
+                }
+                PickupFilterNetwork.CHANNEL.sendTo(new ConfigSnapshotPacket(mode == null ? FilterMode.DISABLED.getId() : mode.getId(), serialized), player);
             });
 
             return null;
         }
     }
 }
-
