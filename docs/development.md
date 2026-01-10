@@ -149,3 +149,8 @@
 
 - `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 25s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示）
 - `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 19s`（同上警告）
+
+## 验证记录（任务 11）
+
+- `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 21s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示）
+- `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 25s`（同上警告）
