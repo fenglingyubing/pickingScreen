@@ -7,6 +7,7 @@ import com.fenglingyubing.pickupfilter.client.input.KeyBindingManager;
 import com.fenglingyubing.pickupfilter.network.ClearDropsPacket;
 import com.fenglingyubing.pickupfilter.network.CycleModePacket;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
+import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -14,6 +15,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class ClientEventHandler {
     private boolean introChecked;
+    private boolean snapshotRequested;
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
@@ -39,12 +41,18 @@ public class ClientEventHandler {
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        if (introChecked) {
-            return;
-        }
 
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null || mc.world == null) {
+            return;
+        }
+
+        if (!snapshotRequested) {
+            snapshotRequested = true;
+            PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
+        }
+
+        if (introChecked) {
             return;
         }
         if (mc.currentScreen != null) {

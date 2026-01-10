@@ -6,6 +6,7 @@ import com.fenglingyubing.pickupfilter.config.FilterRule;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ClientConfigSnapshotStore {
@@ -13,10 +14,15 @@ public final class ClientConfigSnapshotStore {
     }
 
     private static final AtomicInteger REVISION = new AtomicInteger();
+    private static final AtomicBoolean HAS_SNAPSHOT = new AtomicBoolean(false);
     private static volatile Snapshot snapshot = new Snapshot(FilterMode.DISABLED, Collections.emptyList());
 
     public static int getRevision() {
         return REVISION.get();
+    }
+
+    public static boolean hasReceivedSnapshot() {
+        return HAS_SNAPSHOT.get();
     }
 
     public static Snapshot getSnapshot() {
@@ -34,6 +40,7 @@ public final class ClientConfigSnapshotStore {
             }
         }
         snapshot = new Snapshot(safeMode, Collections.unmodifiableList(copied));
+        HAS_SNAPSHOT.set(true);
         REVISION.incrementAndGet();
     }
 
@@ -55,4 +62,3 @@ public final class ClientConfigSnapshotStore {
         }
     }
 }
-
