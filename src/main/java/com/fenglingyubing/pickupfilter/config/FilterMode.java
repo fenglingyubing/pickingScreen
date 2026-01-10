@@ -17,6 +17,10 @@ public enum FilterMode {
         return id;
     }
 
+    public String getTranslationKey() {
+        return "pickupfilter.mode." + id;
+    }
+
     public static FilterMode fromId(String id) {
         if (id == null) {
             return DISABLED;

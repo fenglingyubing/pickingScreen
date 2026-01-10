@@ -34,8 +34,15 @@ public class ItemActionPolicyPropertyTest implements WithQuickTheories {
                 });
     }
 
+    @Test
+    public void property4_disabledModeTransparency() {
+        qt().withExamples(250)
+                .forAll(SourceDSL.booleans().all())
+                .check(matchesFilter -> !ItemActionPolicy.shouldCancelPickup(FilterMode.DISABLED, matchesFilter)
+                        && !ItemActionPolicy.shouldDestroyDrop(FilterMode.DISABLED, matchesFilter));
+    }
+
     private static Gen<FilterMode> modes() {
         return SourceDSL.arbitrary().pick(FilterMode.values());
     }
 }
-

@@ -22,11 +22,19 @@ public class KeyBindingManagerTest {
     }
 
     @Test
+    public void toggleModeKey_isO_andHasTranslationKeys() {
+        assertEquals("key.pickupfilter.toggle_mode", KeyBindingManager.TOGGLE_MODE_KEY.getKeyDescription());
+        assertEquals("key.categories.pickupfilter", KeyBindingManager.TOGGLE_MODE_KEY.getKeyCategory());
+        assertEquals(Keyboard.KEY_O, KeyBindingManager.TOGGLE_MODE_KEY.getKeyCode());
+    }
+
+    @Test
     public void registerKeyBindings_delegatesToRegistrar() {
         List<KeyBinding> registered = new ArrayList<>();
         KeyBindingManager.registerKeyBindings(registered::add);
-        assertEquals(1, registered.size());
+        assertEquals(2, registered.size());
         assertSame(KeyBindingManager.CLEAR_DROPS_KEY, registered.get(0));
+        assertSame(KeyBindingManager.TOGGLE_MODE_KEY, registered.get(1));
     }
 
     @Test
@@ -39,6 +47,20 @@ public class KeyBindingManagerTest {
 
         assertFalse(KeyBindingManager.consumeClearDropsKeyPress(keyBinding -> {
             assertSame(KeyBindingManager.CLEAR_DROPS_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
+    }
+
+    @Test
+    public void consumeToggleModeKeyPress_consumesTicks() {
+        AtomicInteger calls = new AtomicInteger();
+        assertTrue(KeyBindingManager.consumeToggleModeKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.TOGGLE_MODE_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
+
+        assertFalse(KeyBindingManager.consumeToggleModeKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.TOGGLE_MODE_KEY, keyBinding);
             return calls.getAndIncrement() == 0;
         }));
     }

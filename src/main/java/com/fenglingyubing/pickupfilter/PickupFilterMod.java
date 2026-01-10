@@ -37,6 +37,10 @@ public class PickupFilterMod {
     private ConfigManager configManager;
     private CommonEventHandler eventHandler;
 
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         File configFile = event.getSuggestedConfigurationFile();

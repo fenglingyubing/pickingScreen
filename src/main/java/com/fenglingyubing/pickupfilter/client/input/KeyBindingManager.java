@@ -14,12 +14,19 @@ public final class KeyBindingManager {
             "key.categories.pickupfilter"
     );
 
+    public static final KeyBinding TOGGLE_MODE_KEY = new KeyBinding(
+            "key.pickupfilter.toggle_mode",
+            Keyboard.KEY_O,
+            "key.categories.pickupfilter"
+    );
+
     public static void registerKeyBindings() {
         registerKeyBindings(ClientRegistry::registerKeyBinding);
     }
 
     static void registerKeyBindings(KeyBindingRegistrar registrar) {
         registrar.register(CLEAR_DROPS_KEY);
+        registrar.register(TOGGLE_MODE_KEY);
     }
 
     public static boolean consumeClearDropsKeyPress() {
@@ -28,5 +35,13 @@ public final class KeyBindingManager {
 
     static boolean consumeClearDropsKeyPress(KeyPressReader keyPressReader) {
         return keyPressReader.isPressed(CLEAR_DROPS_KEY);
+    }
+
+    public static boolean consumeToggleModeKeyPress() {
+        return consumeToggleModeKeyPress(KeyBinding::isPressed);
+    }
+
+    static boolean consumeToggleModeKeyPress(KeyPressReader keyPressReader) {
+        return keyPressReader.isPressed(TOGGLE_MODE_KEY);
     }
 }

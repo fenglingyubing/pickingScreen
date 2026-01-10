@@ -14,6 +14,6 @@ public final class PickupFilterNetwork {
     public static void init() {
         int discriminator = 0;
         CHANNEL.registerMessage(ClearDropsPacket.Handler.class, ClearDropsPacket.class, discriminator++, Side.SERVER);
+        CHANNEL.registerMessage(CycleModePacket.Handler.class, CycleModePacket.class, discriminator++, Side.SERVER);
     }
 }
-
