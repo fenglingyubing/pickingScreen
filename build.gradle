@@ -30,6 +30,7 @@ repositories {
 
 dependencies {
     testCompile 'junit:junit:4.13.2'
+    testCompile 'org.quicktheories:quicktheories:0.26'
 }
 
 processResources {
@@ -48,4 +49,3 @@ processResources {
         exclude 'mcmod.info'
     }
 }
-

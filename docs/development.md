@@ -13,6 +13,11 @@
 - 运行测试：`./gradlew test`
 - 清理：`./gradlew clean`
 
+## 测试约定
+
+- 本项目使用 JUnit 4 + QuickTheories 编写属性测试（`./gradlew test` 会一并运行）。
+- 属性测试默认至少 100 次随机样例（以测试代码中的 `withExamples(...)` 为准）。
+
 ## 目录结构
 
 - `src/main/java`：模组代码
