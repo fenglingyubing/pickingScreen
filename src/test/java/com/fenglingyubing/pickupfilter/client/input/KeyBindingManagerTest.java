@@ -6,6 +6,7 @@ import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,13 +31,15 @@ public class KeyBindingManagerTest {
 
     @Test
     public void consumeClearDropsKeyPress_consumesTicks() {
-        while (KeyBindingManager.consumeClearDropsKeyPress()) {
-            // Drain any previous state.
-        }
+        AtomicInteger calls = new AtomicInteger();
+        assertTrue(KeyBindingManager.consumeClearDropsKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.CLEAR_DROPS_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
 
-        KeyBinding.onTick(Keyboard.KEY_K);
-        assertTrue(KeyBindingManager.consumeClearDropsKeyPress());
-        assertFalse(KeyBindingManager.consumeClearDropsKeyPress());
+        assertFalse(KeyBindingManager.consumeClearDropsKeyPress(keyBinding -> {
+            assertSame(KeyBindingManager.CLEAR_DROPS_KEY, keyBinding);
+            return calls.getAndIncrement() == 0;
+        }));
     }
 }
-

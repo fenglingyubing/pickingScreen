@@ -23,6 +23,10 @@ public final class KeyBindingManager {
     }
 
     public static boolean consumeClearDropsKeyPress() {
-        return CLEAR_DROPS_KEY.isPressed();
+        return consumeClearDropsKeyPress(KeyBinding::isPressed);
+    }
+
+    static boolean consumeClearDropsKeyPress(KeyPressReader keyPressReader) {
+        return keyPressReader.isPressed(CLEAR_DROPS_KEY);
     }
 }
