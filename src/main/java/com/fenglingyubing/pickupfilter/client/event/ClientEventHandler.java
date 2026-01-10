@@ -4,11 +4,16 @@ import com.fenglingyubing.pickupfilter.client.PickupFilterClient;
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterConfigScreen;
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterIntroScreen;
 import com.fenglingyubing.pickupfilter.client.input.KeyBindingManager;
+import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.network.ClearDropsPacket;
+import com.fenglingyubing.pickupfilter.network.ClientConfigSnapshotStore;
 import com.fenglingyubing.pickupfilter.network.CycleModePacket;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -16,6 +21,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ClientEventHandler {
     private boolean introChecked;
     private boolean snapshotRequested;
+    private int lastSnapshotRevision = -1;
+    private FilterMode lastKnownMode;
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
@@ -29,6 +36,10 @@ public class ClientEventHandler {
 
         if (KeyBindingManager.consumeToggleModeKeyPress()) {
             PickupFilterNetwork.CHANNEL.sendToServer(new CycleModePacket());
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc.player != null) {
+                mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "拾取筛：已请求切换模式…"), true);
+            }
         }
 
         if (KeyBindingManager.consumeOpenConfigKeyPress() && Minecraft.getMinecraft().currentScreen == null) {
@@ -50,6 +61,22 @@ public class ClientEventHandler {
         if (!snapshotRequested) {
             snapshotRequested = true;
             PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
+        }
+
+        int revision = ClientConfigSnapshotStore.getRevision();
+        if (revision != lastSnapshotRevision) {
+            lastSnapshotRevision = revision;
+            ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
+            FilterMode mode = snapshot == null ? null : snapshot.getMode();
+            if (lastKnownMode == null) {
+                lastKnownMode = mode;
+            } else if (mode != null && mode != lastKnownMode) {
+                lastKnownMode = mode;
+                mc.player.sendStatusMessage(new TextComponentString(
+                        TextFormatting.GRAY + "拾取筛模式："
+                                + TextFormatting.AQUA + I18n.format(mode.getTranslationKey())
+                ), true);
+            }
         }
 
         if (introChecked) {

@@ -42,10 +42,30 @@ public class InventoryGuiButtonHandler {
             }
         }
 
-        int guiLeft = (gui.width - 176) / 2;
-        int guiTop = (gui.height - 166) / 2;
+        int xSize = 176;
+        int ySize = 166;
+        if (gui instanceof GuiContainer) {
+            int[] size = readGuiContainerSize((GuiContainer) gui);
+            if (size != null && size.length == 2) {
+                xSize = size[0];
+                ySize = size[1];
+            }
+        }
 
-        buttons.add(new GuiButton(BUTTON_ID, guiLeft + 154, guiTop + 4, 18, 18, "筛"));
+        int guiLeft = (gui.width - xSize) / 2;
+        int guiTop = (gui.height - ySize) / 2;
+
+        int targetX = guiLeft + xSize - 22;
+        int targetY = guiTop + ySize - 22;
+
+        GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
+        if (lowestRightButton != null) {
+            targetX = lowestRightButton.xPosition;
+            targetY = lowestRightButton.yPosition + lowestRightButton.height + 2;
+            targetY = Math.min(targetY, gui.height - 22);
+        }
+
+        buttons.add(new GuiButton(BUTTON_ID, targetX, targetY, 18, 18, "筛"));
     }
 
     @SubscribeEvent
@@ -148,6 +168,53 @@ public class InventoryGuiButtonHandler {
         }
         ItemStack stack = hovered.getStack();
         return stack == null ? ItemStack.EMPTY : stack;
+    }
+
+    private static GuiButton findLowestRightSmallButton(List<GuiButton> buttons, int guiLeft, int guiTop, int xSize, int ySize) {
+        if (buttons == null) {
+            return null;
+        }
+        int rightEdge = guiLeft + xSize;
+        int leftBound = rightEdge - 34;
+        int topBound = guiTop - 8;
+        int bottomBound = guiTop + ySize + 60;
+
+        GuiButton best = null;
+        for (GuiButton button : buttons) {
+            if (button == null) {
+                continue;
+            }
+            if (button.width != 18 || button.height != 18) {
+                continue;
+            }
+            if (button.xPosition < leftBound || button.xPosition > rightEdge + 60) {
+                continue;
+            }
+            if (button.yPosition < topBound || button.yPosition > bottomBound) {
+                continue;
+            }
+            if (best == null || button.yPosition > best.yPosition) {
+                best = button;
+            }
+        }
+        return best;
+    }
+
+    private static int[] readGuiContainerSize(GuiContainer gui) {
+        try {
+            Field xSizeField = GuiContainer.class.getDeclaredField("xSize");
+            Field ySizeField = GuiContainer.class.getDeclaredField("ySize");
+            xSizeField.setAccessible(true);
+            ySizeField.setAccessible(true);
+            int xSize = (int) xSizeField.get(gui);
+            int ySize = (int) ySizeField.get(gui);
+            if (xSize <= 0 || ySize <= 0) {
+                return null;
+            }
+            return new int[]{xSize, ySize};
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private static List<FilterRule> mergeRules(List<FilterRule> existing, FilterRule adding) {
