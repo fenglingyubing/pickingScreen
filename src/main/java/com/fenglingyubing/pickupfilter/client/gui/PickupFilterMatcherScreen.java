@@ -1,7 +1,7 @@
 package com.fenglingyubing.pickupfilter.client.gui;
 
-import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
+import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.network.ClientConfigSnapshotStore;
 import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.network.RequestConfigSnapshotPacket;
@@ -16,55 +16,64 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PickupFilterMatcherScreen extends GuiScreen {
-    private static final int X_SIZE = 176;
-    private static final int HEADER_H = 22;
     private static final int SLOT = 18;
 
-    private static final int RULE_COLS = 9;
-    private static final int RULE_ROWS = 3;
-    private static final int RULES_PER_PAGE = RULE_COLS * RULE_ROWS;
+    private static final int GRID_COLS = 9;
+    private static final int GRID_ROWS = 3;
+    private static final int GRID_W = GRID_COLS * SLOT;
+    private static final int GRID_H = GRID_ROWS * SLOT;
+    private static final int RULES_PER_PAGE = GRID_COLS * GRID_ROWS;
 
-    private static final int INV_COLS = 9;
     private static final int INV_MAIN_ROWS = 3;
     private static final int INV_HOTBAR_ROWS = 1;
+    private static final int INV_ROWS = INV_MAIN_ROWS + INV_HOTBAR_ROWS;
+    private static final int INV_H = INV_ROWS * SLOT + 4;
 
-    private static final int COLOR_DIM = 0xAA000000;
-    private static final int COLOR_PANEL = 0xFFE7E6E3;
-    private static final int COLOR_PANEL_INNER = 0xFFF4F3F1;
-    private static final int COLOR_SHADOW = 0x33000000;
-    private static final int COLOR_BORDER = 0xFF2E2B2A;
-    private static final int COLOR_TEXT = 0xFF1A1716;
-    private static final int COLOR_MUTED = 0xFF6F6A67;
-    private static final int COLOR_ACCENT = 0xFF1E9E73;
-    private static final int COLOR_SLOT_BG = 0xFFB9B5B0;
-    private static final int COLOR_SLOT_EDGE = 0xFF7A7672;
+    private static final int COLOR_DIM = 0xC014161B;
+    private static final int COLOR_PANEL = 0xE013171C;
+    private static final int COLOR_PANEL_2 = 0xE0101317;
+    private static final int COLOR_BORDER = 0xFF2B333D;
+    private static final int COLOR_ACCENT = 0xFF43E3A8;
+    private static final int COLOR_TEXT = 0xFFE7EEF5;
+    private static final int COLOR_MUTED = 0xFF93A3B2;
+    private static final int COLOR_SLOT_BG = 0xFF0B0F14;
+    private static final int COLOR_SLOT_EDGE = 0xFF2B333D;
 
     private final GuiScreen parent;
 
-    private GuiButton applyButton;
-    private GuiButton clearButton;
-    private GuiButton backButton;
-    private GuiButton openConfigButton;
+    private GuiButton tabPickupButton;
+    private GuiButton tabDestroyButton;
     private GuiButton prevPageButton;
     private GuiButton nextPageButton;
 
+    private GuiButton applyButton;
+    private GuiButton clearButton;
+    private GuiButton openConfigButton;
+    private GuiButton backButton;
+
     private String status = TextFormatting.DARK_GRAY + "同步中…";
     private int lastSnapshotRevision = -1;
-    private boolean dirty;
+
     private FilterMode currentMode = FilterMode.DISABLED;
+    private FilterMode editingMode = FilterMode.PICKUP_MATCHING;
 
-    private int guiLeft;
-    private int guiTop;
-    private int ySize;
+    private int panelX;
+    private int panelY;
+    private int panelW;
+    private int panelH;
+    private boolean splitLayout;
 
+    private int rulesLabelY;
     private int rulesX;
     private int rulesY;
+
     private int invLabelY;
     private int invX;
     private int invY;
@@ -83,35 +92,67 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
 
-        ySize = 222;
-        guiLeft = (this.width - X_SIZE) / 2;
-        guiTop = (this.height - ySize) / 2;
+        panelW = Math.min(520, this.width - 24);
+        panelH = Math.min(304, this.height - 24);
+        panelX = (this.width - panelW) / 2;
+        panelY = (this.height - panelH) / 2;
+        splitLayout = panelW >= 420;
 
-        rulesX = guiLeft + 7;
-        rulesY = guiTop + HEADER_H + 10;
+        int headerH = 56;
+        int footerH = 46;
+        int contentTop = panelY + headerH;
 
-        invLabelY = rulesY + RULE_ROWS * SLOT + 12;
-        invX = guiLeft + 7;
-        invY = invLabelY + 10;
+        int pad = 18;
+        int blockTop = contentTop + 18;
+
+        if (splitLayout) {
+            invX = panelX + pad;
+            rulesX = panelX + panelW - pad - GRID_W;
+            invLabelY = blockTop - 12;
+            rulesLabelY = blockTop - 12;
+            invY = blockTop;
+            rulesY = blockTop;
+        } else {
+            rulesX = panelX + (panelW - GRID_W) / 2;
+            invX = rulesX;
+            rulesLabelY = blockTop - 12;
+            rulesY = blockTop;
+            invLabelY = rulesY + GRID_H + 22;
+            invY = invLabelY + 10;
+        }
         hotbarY = invY + INV_MAIN_ROWS * SLOT + 4;
 
-        int headerButtonY = guiTop + 2;
-        backButton = addButton(new GuiButton(4, guiLeft + 6, headerButtonY, 18, 18, "<"));
-        openConfigButton = addButton(new GuiButton(3, guiLeft + X_SIZE - 6 - 18, headerButtonY, 18, 18, "配"));
-        clearButton = addButton(new GuiButton(2, guiLeft + X_SIZE - 6 - 18 * 2 - 2, headerButtonY, 18, 18, "清"));
-        applyButton = addButton(new GuiButton(1, guiLeft + X_SIZE - 6 - 18 * 3 - 4, headerButtonY, 18, 18, "存"));
+        int tabY = panelY + 30;
+        int tabX = panelX + pad;
+        tabPickupButton = addButton(new GuiButton(21, tabX, tabY, 78, 18, "拾取列表"));
+        tabDestroyButton = addButton(new GuiButton(22, tabX + 84, tabY, 78, 18, "销毁列表"));
 
-        int pagerY = rulesY - 12;
-        prevPageButton = addButton(new GuiButton(5, guiLeft + X_SIZE - 6 - 14 * 2 - 2, pagerY, 14, 14, "<"));
-        nextPageButton = addButton(new GuiButton(6, guiLeft + X_SIZE - 6 - 14, pagerY, 14, 14, ">"));
+        int pagerY = rulesLabelY - 2;
+        prevPageButton = addButton(new GuiButton(23, rulesX + GRID_W - 30, pagerY, 14, 14, "<"));
+        nextPageButton = addButton(new GuiButton(24, rulesX + GRID_W - 14, pagerY, 14, 14, ">"));
 
+        int bottomY = panelY + panelH - 34;
+        int gap = 8;
+        int buttonsW = panelW - pad * 2 - gap * 3;
+        int w = Math.max(70, buttonsW / 4);
+        int x = panelX + pad;
+        applyButton = addButton(new GuiButton(31, x, bottomY, w, 20, "同步到服务器"));
+        x += w + gap;
+        clearButton = addButton(new GuiButton(32, x, bottomY, w, 20, "清空列表"));
+        x += w + gap;
+        openConfigButton = addButton(new GuiButton(33, x, bottomY, w, 20, "打开配置"));
+        x += w + gap;
+        backButton = addButton(new GuiButton(34, x, bottomY, w, 20, "返回背包"));
+
+        int revisionBefore = ClientConfigSnapshotStore.getRevision();
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
-        if (snapshot != null && snapshot.getRules() != null && !snapshot.getRules().isEmpty()) {
-            currentMode = snapshot.getMode() == null ? FilterMode.DISABLED : snapshot.getMode();
-            loadFromSnapshot(snapshot);
-        }
+        currentMode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+        editingMode = defaultEditingModeForCurrentMode(currentMode);
+        loadFromSnapshot(snapshot, editingMode);
+
+        lastSnapshotRevision = revisionBefore;
         requestSnapshot();
-        lastSnapshotRevision = ClientConfigSnapshotStore.getRevision();
+        refreshButtons();
     }
 
     @Override
@@ -125,46 +166,73 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             return;
         }
 
-        if (button.id == 1) {
+        if (button.id == 21) {
+            switchEditingMode(FilterMode.PICKUP_MATCHING);
+            return;
+        }
+        if (button.id == 22) {
+            switchEditingMode(FilterMode.DESTROY_MATCHING);
+            return;
+        }
+
+        if (button.id == 23) {
+            if (pageIndex > 0) {
+                pageIndex--;
+                refreshButtons();
+            }
+            return;
+        }
+        if (button.id == 24) {
+            int totalPages = getTotalPages();
+            if (pageIndex + 1 < totalPages) {
+                pageIndex++;
+                refreshButtons();
+            }
+            return;
+        }
+
+        if (button.id == 31) {
             List<FilterRule> toSend = composeRulesToSend();
-            PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(toSend));
-            status = TextFormatting.GRAY + "已发送配置更新（规则 " + toSend.size() + " 条）…";
-            dirty = false;
+            PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(editingMode, toSend));
+            status = TextFormatting.GRAY + "已提交同步（" + toSend.size() + " 条）…";
             requestSnapshot();
             return;
         }
 
-        if (button.id == 2) {
+        if (button.id == 32) {
             itemRules.clear();
             pageIndex = 0;
-            dirty = true;
-            autoSave(TextFormatting.DARK_GRAY + "已清空物品列表（保留高级规则 " + hiddenRulesCount + " 条）");
+            autoSave(TextFormatting.DARK_GRAY + "已清空列表（保留高级规则 " + hiddenRulesCount + " 条）");
             return;
         }
 
-        if (button.id == 3) {
+        if (button.id == 33) {
             mc.displayGuiScreen(new PickupFilterConfigScreen());
             return;
         }
 
-        if (button.id == 4) {
+        if (button.id == 34) {
             mc.displayGuiScreen(parent);
+        }
+    }
+
+    private void switchEditingMode(FilterMode target) {
+        FilterMode next = target == FilterMode.DESTROY_MATCHING ? FilterMode.DESTROY_MATCHING : FilterMode.PICKUP_MATCHING;
+        if (editingMode == next) {
             return;
         }
+        editingMode = next;
+        pageIndex = 0;
+        loadFromSnapshot(ClientConfigSnapshotStore.getSnapshot(), editingMode);
+        status = TextFormatting.DARK_GRAY + "正在编辑：" + getListName(editingMode);
+        refreshButtons();
+    }
 
-        if (button.id == 5) {
-            if (pageIndex > 0) {
-                pageIndex--;
-            }
-            return;
+    private static FilterMode defaultEditingModeForCurrentMode(FilterMode mode) {
+        if (mode == FilterMode.DESTROY_MATCHING) {
+            return FilterMode.DESTROY_MATCHING;
         }
-
-        if (button.id == 6) {
-            int totalPages = getTotalPages();
-            if (pageIndex + 1 < totalPages) {
-                pageIndex++;
-            }
-        }
+        return FilterMode.PICKUP_MATCHING;
     }
 
     private void requestSnapshot() {
@@ -175,17 +243,21 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
+
         int revision = ClientConfigSnapshotStore.getRevision();
         if (revision != lastSnapshotRevision) {
             lastSnapshotRevision = revision;
             ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
-            int count = snapshot == null || snapshot.getRules() == null ? 0 : snapshot.getRules().size();
-            status = TextFormatting.DARK_GRAY + "已同步：规则 " + count + " 条";
-            if (!dirty && snapshot != null) {
-                currentMode = snapshot.getMode() == null ? FilterMode.DISABLED : snapshot.getMode();
-                loadFromSnapshot(snapshot);
-            }
+            currentMode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+            loadFromSnapshot(snapshot, editingMode);
+            status = TextFormatting.DARK_GRAY + "已同步：拾取 " + (snapshot == null ? 0 : snapshot.getPickupRules().size())
+                    + " / 销毁 " + (snapshot == null ? 0 : snapshot.getDestroyRules().size());
         }
+
+        refreshButtons();
+    }
+
+    private void refreshButtons() {
         int totalPages = getTotalPages();
         if (pageIndex >= totalPages) {
             pageIndex = Math.max(0, totalPages - 1);
@@ -196,8 +268,11 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         if (nextPageButton != null) {
             nextPageButton.enabled = totalPages > 1 && pageIndex + 1 < totalPages;
         }
-        if (applyButton != null) {
-            applyButton.enabled = dirty;
+        if (tabPickupButton != null) {
+            tabPickupButton.enabled = editingMode != FilterMode.PICKUP_MATCHING;
+        }
+        if (tabDestroyButton != null) {
+            tabDestroyButton.enabled = editingMode != FilterMode.DESTROY_MATCHING;
         }
         if (clearButton != null) {
             clearButton.enabled = !itemRules.isEmpty();
@@ -206,15 +281,17 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
     @Override
     public void handleMouseInput() throws IOException {
-        int wheel = org.lwjgl.input.Mouse.getEventDWheel();
+        int wheel = Mouse.getEventDWheel();
         if (wheel != 0 && isMouseOverRulesGrid()) {
             if (wheel < 0) {
                 int totalPages = getTotalPages();
                 if (pageIndex + 1 < totalPages) {
                     pageIndex++;
+                    refreshButtons();
                 }
             } else if (pageIndex > 0) {
                 pageIndex--;
+                refreshButtons();
             }
             return;
         }
@@ -224,13 +301,13 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         super.mouseClicked(mouseX, mouseY, mouseButton);
+
         if (mouseButton == 1) {
             int ruleSlot = getRuleSlotAt(mouseX, mouseY);
             if (ruleSlot >= 0) {
                 int index = pageIndex * RULES_PER_PAGE + ruleSlot;
                 if (index >= 0 && index < itemRules.size()) {
                     FilterRule removed = itemRules.remove(index);
-                    dirty = true;
                     autoSave(TextFormatting.DARK_GRAY + "已移除：" + (removed == null ? "" : removed.serialize()));
                 }
                 return;
@@ -275,14 +352,13 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         }
 
         itemRules.add(rule);
-        dirty = true;
         autoSave(TextFormatting.GRAY + "已添加："
                 + TextFormatting.AQUA + registryName.getNamespace()
                 + TextFormatting.GRAY + ":"
                 + TextFormatting.AQUA + registryName.getPath()
                 + TextFormatting.DARK_GRAY + " @"
                 + TextFormatting.AQUA + stack.getMetadata()
-                + TextFormatting.DARK_GRAY + "（右键上方格子可移除）");
+                + TextFormatting.DARK_GRAY + "（右键匹配列表可移除）");
     }
 
     @Override
@@ -299,45 +375,60 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         drawDefaultBackground();
         drawRect(0, 0, width, height, COLOR_DIM);
 
-        drawRect(guiLeft + 2, guiTop + 2, guiLeft + X_SIZE + 2, guiTop + ySize + 2, COLOR_SHADOW);
-        drawRect(guiLeft, guiTop, guiLeft + X_SIZE, guiTop + ySize, COLOR_PANEL);
-        drawRect(guiLeft + 1, guiTop + 1, guiLeft + X_SIZE - 1, guiTop + ySize - 1, COLOR_PANEL_INNER);
-        drawRect(guiLeft, guiTop, guiLeft + X_SIZE, guiTop + 1, COLOR_BORDER);
-        drawRect(guiLeft, guiTop + ySize - 1, guiLeft + X_SIZE, guiTop + ySize, COLOR_BORDER);
-        drawRect(guiLeft, guiTop, guiLeft + 1, guiTop + ySize, COLOR_BORDER);
-        drawRect(guiLeft + X_SIZE - 1, guiTop, guiLeft + X_SIZE, guiTop + ySize, COLOR_BORDER);
-
-        drawRect(guiLeft + 1, guiTop + 1, guiLeft + X_SIZE - 1, guiTop + HEADER_H, 0xFFF0EFED);
-        drawRect(guiLeft + 1, guiTop + HEADER_H, guiLeft + X_SIZE - 1, guiTop + HEADER_H + 1, 0xFFCEC9C4);
-
-        drawCenteredString(fontRenderer, TextFormatting.BOLD + "拾取筛", guiLeft + X_SIZE / 2, guiTop + 7, COLOR_TEXT);
-        String modeLabel = TextFormatting.DARK_GRAY + "当前：" + TextFormatting.GRAY + getListNameForMode(currentMode);
-        drawString(fontRenderer, modeLabel, guiLeft + 6, guiTop + 7, COLOR_MUTED);
-
+        drawPanel();
+        drawHeader();
         drawRulesGrid(mouseX, mouseY);
         drawInventory(mouseX, mouseY);
-
-        String pageText = (pageIndex + 1) + "/" + getTotalPages();
-        drawString(fontRenderer, TextFormatting.DARK_GRAY + pageText, guiLeft + X_SIZE - 6 - fontRenderer.getStringWidth(pageText) - 32, rulesY - 12, COLOR_MUTED);
-
-        int hintY = guiTop + ySize - 12;
-        String hint = hiddenRulesCount > 0
-                ? TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；自动保存；未显示高级规则 " + hiddenRulesCount + " 条"
-                : TextFormatting.DARK_GRAY + "提示：左键从下方添加；右键移除；自动保存";
-        drawString(fontRenderer, hint, guiLeft + 6, hintY, COLOR_MUTED);
-        drawString(fontRenderer, status == null ? "" : status, guiLeft + 6, hintY - 10, COLOR_MUTED);
+        drawFooter();
 
         GlStateManager.disableLighting();
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
+    private void drawPanel() {
+        drawRect(panelX + 2, panelY + 2, panelX + panelW + 2, panelY + panelH + 2, 0x55000000);
+        drawGradientRect(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_PANEL, COLOR_PANEL_2);
+        drawRect(panelX, panelY, panelX + panelW, panelY + 1, COLOR_BORDER);
+        drawRect(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, COLOR_BORDER);
+        drawRect(panelX, panelY, panelX + 1, panelY + panelH, COLOR_BORDER);
+        drawRect(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, COLOR_BORDER);
+        drawRect(panelX + 1, panelY + 1, panelX + panelW - 1, panelY + 2, COLOR_ACCENT);
+    }
+
+    private void drawHeader() {
+        String title = TextFormatting.BOLD + "拾取筛" + TextFormatting.RESET + TextFormatting.DARK_GRAY + " - 物品匹配";
+        drawCenteredString(fontRenderer, title, panelX + panelW / 2, panelY + 12, COLOR_TEXT);
+
+        String modeLine = TextFormatting.DARK_GRAY + "当前模式："
+                + TextFormatting.AQUA + getModeNameChinese(currentMode)
+                + TextFormatting.DARK_GRAY + "  |  正在编辑："
+                + TextFormatting.AQUA + getListName(editingMode);
+        drawString(fontRenderer, modeLine, panelX + 18, panelY + 46, COLOR_MUTED);
+    }
+
+    private void drawFooter() {
+        int footerY = panelY + panelH - 42;
+        drawRect(panelX + 18, footerY - 10, panelX + panelW - 18, footerY - 9, 0x332B333D);
+
+        String hint = TextFormatting.DARK_GRAY + "提示：左键从背包添加；右键从列表移除；自动保存";
+        if (hiddenRulesCount > 0) {
+            hint += TextFormatting.DARK_GRAY + "；未显示高级规则 " + hiddenRulesCount + " 条";
+        }
+
+        drawString(fontRenderer, status == null ? "" : status, panelX + 18, footerY, COLOR_MUTED);
+        drawString(fontRenderer, hint, panelX + 18, footerY + 12, COLOR_MUTED);
+    }
+
     private void drawRulesGrid(int mouseX, int mouseY) {
-        drawString(fontRenderer, TextFormatting.BOLD + "匹配列表", rulesX, rulesY - 12, COLOR_TEXT);
-        drawString(fontRenderer, TextFormatting.DARK_GRAY + "（右键移除）", rulesX + 52, rulesY - 12, COLOR_MUTED);
+        String label = TextFormatting.BOLD + "匹配列表" + TextFormatting.RESET + TextFormatting.DARK_GRAY + "（右键移除）";
+        drawString(fontRenderer, label, rulesX, rulesLabelY, COLOR_TEXT);
+
+        String pageText = (pageIndex + 1) + "/" + getTotalPages();
+        drawString(fontRenderer, TextFormatting.DARK_GRAY + pageText, rulesX + GRID_W - fontRenderer.getStringWidth(pageText) - 34, rulesLabelY, COLOR_MUTED);
 
         for (int slotIndex = 0; slotIndex < RULES_PER_PAGE; slotIndex++) {
-            int col = slotIndex % RULE_COLS;
-            int row = slotIndex / RULE_COLS;
+            int col = slotIndex % GRID_COLS;
+            int row = slotIndex / GRID_COLS;
             int x = rulesX + col * SLOT;
             int y = rulesY + row * SLOT;
             drawSlot(x, y);
@@ -352,12 +443,11 @@ public class PickupFilterMatcherScreen extends GuiScreen {
                     itemRender.renderItemAndEffectIntoGUI(icon, x + 1, y + 1);
                     RenderHelper.disableStandardItemLighting();
                 } else if (rule != null) {
-                    String text = "?";
-                    fontRenderer.drawString(text, x + 6, y + 6, COLOR_MUTED);
+                    fontRenderer.drawString("?", x + 6, y + 6, COLOR_MUTED);
                 }
 
                 if (isPointInRect(x, y, SLOT, SLOT, mouseX, mouseY)) {
-                    drawRect(x, y, x + SLOT, y + SLOT, 0x331E9E73);
+                    drawRect(x, y, x + SLOT, y + SLOT, 0x2243E3A8);
                     if (icon != null && !icon.isEmpty()) {
                         renderToolTip(icon, mouseX, mouseY);
                     } else if (rule != null) {
@@ -374,16 +464,15 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     }
 
     private void drawInventory(int mouseX, int mouseY) {
-        drawString(fontRenderer, TextFormatting.BOLD + "背包", invX, invLabelY, COLOR_TEXT);
-        drawString(fontRenderer, TextFormatting.DARK_GRAY + "（左键添加到上方）", invX + 28, invLabelY, COLOR_MUTED);
+        drawString(fontRenderer, TextFormatting.BOLD + "背包" + TextFormatting.RESET + TextFormatting.DARK_GRAY + "（左键添加）", invX, invLabelY, COLOR_TEXT);
 
         for (int displayIndex = 0; displayIndex < 36; displayIndex++) {
             int row;
-            int col = displayIndex % INV_COLS;
+            int col = displayIndex % GRID_COLS;
             if (displayIndex < 27) {
-                row = displayIndex / INV_COLS;
+                row = displayIndex / GRID_COLS;
             } else {
-                row = INV_MAIN_ROWS + (displayIndex - 27) / INV_COLS;
+                row = INV_MAIN_ROWS + (displayIndex - 27) / GRID_COLS;
             }
 
             int x = invX + col * SLOT;
@@ -400,25 +489,46 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             }
 
             if (isPointInRect(x, y, SLOT, SLOT, mouseX, mouseY)) {
-                drawRect(x, y, x + SLOT, y + SLOT, 0x331E9E73);
+                drawRect(x, y, x + SLOT, y + SLOT, 0x2243E3A8);
                 if (stack != null && !stack.isEmpty()) {
                     renderToolTip(stack, mouseX, mouseY);
                 }
             }
         }
 
-        drawRect(invX, hotbarY - 3, invX + INV_COLS * SLOT, hotbarY - 2, 0x33000000);
+        drawRect(invX, hotbarY - 3, invX + GRID_W, hotbarY - 2, 0x332B333D);
+    }
+
+    private void drawSlot(int x, int y) {
+        drawRect(x, y, x + SLOT, y + SLOT, COLOR_SLOT_BG);
+        drawRect(x, y, x + SLOT, y + 1, COLOR_SLOT_EDGE);
+        drawRect(x, y, x + 1, y + SLOT, COLOR_SLOT_EDGE);
+        drawRect(x + SLOT - 1, y, x + SLOT, y + SLOT, 0xFF3A4552);
+        drawRect(x, y + SLOT - 1, x + SLOT, y + SLOT, 0xFF3A4552);
+        drawRect(x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, 0x12FFFFFF);
+    }
+
+    private int getRuleSlotAt(int mouseX, int mouseY) {
+        if (!isPointInRect(rulesX, rulesY, GRID_W, GRID_H, mouseX, mouseY)) {
+            return -1;
+        }
+        int relX = mouseX - rulesX;
+        int relY = mouseY - rulesY;
+        int col = relX / SLOT;
+        int row = relY / SLOT;
+        int index = row * GRID_COLS + col;
+        return index < 0 || index >= RULES_PER_PAGE ? -1 : index;
+    }
+
+    private boolean isMouseOverRulesGrid() {
+        int mx = Mouse.getEventX() * this.width / this.mc.displayWidth;
+        int my = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1;
+        return isPointInRect(rulesX, rulesY, GRID_W, GRID_H, mx, my);
     }
 
     private int getInventoryDisplayIndexAt(int mouseX, int mouseY) {
-        int gridW = INV_COLS * SLOT;
-        int mainH = INV_MAIN_ROWS * SLOT;
-        int totalH = mainH + 4 + INV_HOTBAR_ROWS * SLOT;
-
-        if (mouseX < invX || mouseX >= invX + gridW) {
-            return -1;
-        }
-        if (mouseY < invY || mouseY >= invY + totalH) {
+        int totalH = INV_MAIN_ROWS * SLOT + 4 + INV_HOTBAR_ROWS * SLOT;
+        if (!isPointInRect(invX, invY, GRID_W, totalH, mouseX, mouseY)) {
             return -1;
         }
 
@@ -431,7 +541,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             if (row < 0 || row >= INV_MAIN_ROWS) {
                 return -1;
             }
-            return row * INV_COLS + col;
+            return row * GRID_COLS + col;
         }
 
         int relHotbarY = mouseY - hotbarY;
@@ -439,7 +549,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         if (row < 0 || row >= INV_HOTBAR_ROWS) {
             return -1;
         }
-        return 27 + row * INV_COLS + col;
+        return 27 + row * GRID_COLS + col;
     }
 
     private ItemStack getDisplayedInventoryStack(int displayIndex) {
@@ -455,12 +565,16 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         return mc.player.inventory.mainInventory.get(invIndex);
     }
 
-    private void loadFromSnapshot(ClientConfigSnapshotStore.Snapshot snapshot) {
+    private void loadFromSnapshot(ClientConfigSnapshotStore.Snapshot snapshot, FilterMode listMode) {
         hiddenRules.clear();
         itemRules.clear();
         hiddenRulesCount = 0;
 
-        List<FilterRule> rules = snapshot == null ? null : snapshot.getRules();
+        if (snapshot == null) {
+            return;
+        }
+
+        List<FilterRule> rules = snapshot.getRulesForMode(listMode);
         if (rules != null) {
             for (FilterRule rule : rules) {
                 if (rule == null) {
@@ -477,6 +591,7 @@ public class PickupFilterMatcherScreen extends GuiScreen {
                 }
             }
         }
+
         hiddenRulesCount = hiddenRules.size();
         pageIndex = Math.min(pageIndex, Math.max(0, getTotalPages() - 1));
     }
@@ -486,24 +601,8 @@ public class PickupFilterMatcherScreen extends GuiScreen {
             status = newStatus;
         }
         List<FilterRule> toSend = composeRulesToSend();
-        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(toSend));
-        dirty = false;
+        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(editingMode, toSend));
         requestSnapshot();
-    }
-
-    private static String getListNameForMode(FilterMode mode) {
-        if (mode == null) {
-            return "拾取匹配列表";
-        }
-        switch (mode) {
-            case DESTROY_MATCHING:
-                return "销毁匹配列表";
-            case PICKUP_MATCHING:
-                return "拾取匹配列表";
-            case DISABLED:
-            default:
-                return "拾取匹配列表（当前模式：关闭）";
-        }
     }
 
     private List<FilterRule> composeRulesToSend() {
@@ -524,40 +623,12 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         return merged;
     }
 
-    private int getRuleSlotAt(int mouseX, int mouseY) {
-        if (!isPointInRect(rulesX, rulesY, RULE_COLS * SLOT, RULE_ROWS * SLOT, mouseX, mouseY)) {
-            return -1;
-        }
-        int relX = mouseX - rulesX;
-        int relY = mouseY - rulesY;
-        int col = relX / SLOT;
-        int row = relY / SLOT;
-        int index = row * RULE_COLS + col;
-        return index < 0 || index >= RULES_PER_PAGE ? -1 : index;
-    }
-
-    private boolean isMouseOverRulesGrid() {
-        int mx = org.lwjgl.input.Mouse.getEventX() * this.width / this.mc.displayWidth;
-        int my = this.height - org.lwjgl.input.Mouse.getEventY() * this.height / this.mc.displayHeight - 1;
-        return isPointInRect(rulesX, rulesY, RULE_COLS * SLOT, RULE_ROWS * SLOT, mx, my);
-    }
-
-    private void drawSlot(int x, int y) {
-        drawRect(x, y, x + SLOT, y + SLOT, COLOR_SLOT_BG);
-        drawRect(x, y, x + SLOT, y + 1, COLOR_SLOT_EDGE);
-        drawRect(x, y, x + 1, y + SLOT, COLOR_SLOT_EDGE);
-        drawRect(x + SLOT - 1, y, x + SLOT, y + SLOT, 0xFF9E9993);
-        drawRect(x, y + SLOT - 1, x + SLOT, y + SLOT, 0xFF9E9993);
-        drawRect(x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, 0x25FFFFFF);
+    private int getTotalPages() {
+        return Math.max(1, (itemRules.size() + RULES_PER_PAGE - 1) / RULES_PER_PAGE);
     }
 
     private static boolean isPointInRect(int x, int y, int w, int h, int px, int py) {
         return px >= x && px < x + w && py >= y && py < y + h;
-    }
-
-    private int getTotalPages() {
-        int total = Math.max(1, (itemRules.size() + RULES_PER_PAGE - 1) / RULES_PER_PAGE);
-        return total;
     }
 
     private static boolean canDisplayRule(FilterRule rule) {
@@ -589,4 +660,24 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         int meta = rule.getMetadata() == FilterRule.ANY_METADATA ? 0 : rule.getMetadata();
         return new ItemStack(item, 1, meta);
     }
+
+    private static String getListName(FilterMode mode) {
+        return mode == FilterMode.DESTROY_MATCHING ? "销毁匹配列表" : "拾取匹配列表";
+    }
+
+    private static String getModeNameChinese(FilterMode mode) {
+        if (mode == null) {
+            return "关闭";
+        }
+        switch (mode) {
+            case DESTROY_MATCHING:
+                return "销毁";
+            case PICKUP_MATCHING:
+                return "拾取";
+            case DISABLED:
+            default:
+                return "关闭";
+        }
+    }
 }
+

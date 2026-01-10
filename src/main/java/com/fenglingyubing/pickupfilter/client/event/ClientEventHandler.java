@@ -37,7 +37,7 @@ public class ClientEventHandler {
             PickupFilterNetwork.CHANNEL.sendToServer(new CycleModePacket());
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.player != null) {
-                mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "拾取筛：已发送切换请求，等待同步…"), true);
+                mc.player.sendStatusMessage(new TextComponentString(TextFormatting.GRAY + "拾取筛：已发送切换请求，等待同步…"), true);
             }
         }
 

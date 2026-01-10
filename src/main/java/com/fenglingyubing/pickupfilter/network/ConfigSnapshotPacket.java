@@ -15,34 +15,30 @@ import java.util.List;
 
 public class ConfigSnapshotPacket implements IMessage {
     private String modeId;
-    private List<String> rules;
+    private List<String> pickupRules;
+    private List<String> destroyRules;
 
     public ConfigSnapshotPacket() {
     }
 
-    public ConfigSnapshotPacket(String modeId, List<String> rules) {
+    public ConfigSnapshotPacket(String modeId, List<String> pickupRules, List<String> destroyRules) {
         this.modeId = modeId;
-        this.rules = rules;
+        this.pickupRules = pickupRules;
+        this.destroyRules = destroyRules;
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
         modeId = readString(buf, 32);
-        int size = Math.max(0, Math.min(buf.readInt(), 512));
-        rules = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            rules.add(readString(buf, 256));
-        }
+        pickupRules = readRulesList(buf);
+        destroyRules = readRulesList(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
         writeString(buf, modeId == null ? FilterMode.DISABLED.getId() : modeId);
-        List<String> safeRules = rules == null ? new ArrayList<>() : rules;
-        buf.writeInt(Math.min(safeRules.size(), 512));
-        for (int i = 0; i < safeRules.size() && i < 512; i++) {
-            writeString(buf, safeRules.get(i));
-        }
+        writeRulesList(buf, pickupRules);
+        writeRulesList(buf, destroyRules);
     }
 
     public static class Handler implements IMessageHandler<ConfigSnapshotPacket, IMessage> {
@@ -54,18 +50,46 @@ public class ConfigSnapshotPacket implements IMessage {
             IThreadListener threadListener = FMLCommonHandler.instance().getWorldThread(ctx.netHandler);
             threadListener.addScheduledTask(() -> {
                 FilterMode mode = FilterMode.fromId(message.modeId);
-                List<FilterRule> parsed = new ArrayList<>();
-                if (message.rules != null) {
-                    for (String serialized : message.rules) {
-                        FilterRule rule = FilterRule.deserialize(serialized);
-                        if (rule != null) {
-                            parsed.add(rule);
-                        }
-                    }
-                }
-                ClientConfigSnapshotStore.update(mode, parsed);
+                ClientConfigSnapshotStore.update(
+                        mode,
+                        parseRules(message.pickupRules),
+                        parseRules(message.destroyRules)
+                );
             });
             return null;
+        }
+    }
+
+    private static List<FilterRule> parseRules(List<String> serializedRules) {
+        List<FilterRule> parsed = new ArrayList<>();
+        if (serializedRules != null) {
+            for (String serialized : serializedRules) {
+                FilterRule rule = FilterRule.deserialize(serialized);
+                if (rule != null && !parsed.contains(rule)) {
+                    parsed.add(rule);
+                }
+            }
+        }
+        if (parsed.size() > 200) {
+            parsed = parsed.subList(0, 200);
+        }
+        return parsed;
+    }
+
+    private static List<String> readRulesList(ByteBuf buf) {
+        int size = Math.max(0, Math.min(buf.readInt(), 512));
+        List<String> rules = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            rules.add(readString(buf, 256));
+        }
+        return rules;
+    }
+
+    private static void writeRulesList(ByteBuf buf, List<String> rules) {
+        List<String> safeRules = rules == null ? new ArrayList<>() : rules;
+        buf.writeInt(Math.min(safeRules.size(), 512));
+        for (int i = 0; i < safeRules.size() && i < 512; i++) {
+            writeString(buf, safeRules.get(i));
         }
     }
 

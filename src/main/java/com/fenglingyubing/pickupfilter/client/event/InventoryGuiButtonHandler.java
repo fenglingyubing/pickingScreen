@@ -56,30 +56,36 @@ public class InventoryGuiButtonHandler {
         int guiLeft = (gui.width - xSize) / 2;
         int guiTop = (gui.height - ySize) / 2;
 
-        int targetX;
-        int targetY;
+        int targetX = guiLeft + xSize - 18 - 4;
+        int targetY = guiTop + ySize - 18 - 4 - 18;
 
-        boolean hasRightSpace = guiLeft + xSize + 4 + 18 <= gui.width - 4;
-        boolean hasBottomSpace = guiTop + ySize + 4 + 18 <= gui.height - 4;
+        boolean placedInside = isPointInRect(guiLeft, guiTop, xSize, ySize, targetX, targetY) && targetY >= guiTop + 4;
+        if (placedInside) {
+            while (overlapsAny(buttons, targetX, targetY, 18, 18) && targetY > guiTop + 4) {
+                targetY -= 20;
+            }
+            placedInside = !overlapsAny(buttons, targetX, targetY, 18, 18) && targetY >= guiTop + 4;
+        }
 
-        if (hasRightSpace) {
-            targetX = guiLeft + xSize + 4;
-            int minY = guiTop + 6;
-            int maxY = guiTop + ySize - 18;
-            int preferredOffsetFromBottom = 54;
-            targetY = guiTop + ySize - 18 - preferredOffsetFromBottom;
-            targetY = Math.max(minY, Math.min(maxY, targetY));
-        } else if (hasBottomSpace) {
-            targetX = guiLeft + xSize - 18;
-            targetY = guiTop + ySize + 4;
-        } else {
-            targetX = guiLeft + xSize - 22;
-            targetY = guiTop + ySize - 22;
-            GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
-            if (lowestRightButton != null) {
-                targetX = getButtonX(lowestRightButton);
-                targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 6;
-                targetY = Math.min(targetY, gui.height - 22);
+        if (!placedInside) {
+            boolean hasRightSpace = guiLeft + xSize + 4 + 18 <= gui.width - 4;
+            boolean hasBottomSpace = guiTop + ySize + 4 + 18 <= gui.height - 4;
+
+            if (hasRightSpace) {
+                targetX = guiLeft + xSize + 4;
+                targetY = guiTop + 18;
+            } else if (hasBottomSpace) {
+                targetX = guiLeft + xSize - 18;
+                targetY = guiTop + ySize + 4;
+            } else {
+                targetX = guiLeft + xSize - 22;
+                targetY = guiTop + ySize - 22;
+                GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
+                if (lowestRightButton != null) {
+                    targetX = getButtonX(lowestRightButton);
+                    targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 6;
+                    targetY = Math.min(targetY, gui.height - 22);
+                }
             }
         }
 
@@ -139,7 +145,8 @@ public class InventoryGuiButtonHandler {
 
         FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), hovered.getMetadata(), false);
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
-        List<FilterRule> existing = snapshot == null ? null : snapshot.getRules();
+        FilterMode activeMode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+        List<FilterRule> existing = snapshot == null ? null : snapshot.getRulesForMode(activeMode);
         boolean alreadyExists = existing != null && existing.contains(rule);
         if (alreadyExists) {
             mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "已在规则中："
@@ -153,9 +160,10 @@ public class InventoryGuiButtonHandler {
 
         List<FilterRule> merged = mergeRules(existing, rule);
 
-        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(merged));
+        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(activeMode, merged));
         PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
-        mc.player.sendStatusMessage(new TextComponentString(TextFormatting.GRAY + "已添加到拾取筛："
+        String listName = activeMode == FilterMode.DESTROY_MATCHING ? "销毁列表" : "拾取列表";
+        mc.player.sendStatusMessage(new TextComponentString(TextFormatting.GRAY + "已添加到" + listName + "："
                 + TextFormatting.AQUA + registryName.getNamespace()
                 + TextFormatting.GRAY + ":"
                 + TextFormatting.AQUA + registryName.getPath()
@@ -185,15 +193,16 @@ public class InventoryGuiButtonHandler {
 
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
         FilterMode mode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
-        int rulesCount = snapshot == null || snapshot.getRules() == null ? 0 : snapshot.getRules().size();
+        int pickupCount = snapshot == null || snapshot.getPickupRules() == null ? 0 : snapshot.getPickupRules().size();
+        int destroyCount = snapshot == null || snapshot.getDestroyRules() == null ? 0 : snapshot.getDestroyRules().size();
 
-        int boxW = 96;
-        int boxH = 20;
+        int boxW = 110;
+        int boxH = 28;
         int x;
         int y;
         if (guiLeft + xSize + 6 + boxW <= gui.width - 4) {
             x = guiLeft + xSize + 6;
-            y = guiTop + 6;
+            y = guiTop + 30;
         } else {
             x = guiLeft + 6;
             y = guiTop + ySize + 6;
@@ -202,9 +211,10 @@ public class InventoryGuiButtonHandler {
         int bg = 0x88000000;
         gui.drawRect(x, y, x + boxW, y + boxH, bg);
         String line1 = TextFormatting.GREEN + "拾取筛" + TextFormatting.GRAY + "：" + TextFormatting.AQUA + getModeNameChinese(mode);
-        String line2 = TextFormatting.DARK_GRAY + "列表：" + TextFormatting.GRAY + rulesCount + " 条";
+        String line2 = TextFormatting.DARK_GRAY + "拾取" + TextFormatting.GRAY + pickupCount
+                + TextFormatting.DARK_GRAY + " / 销毁" + TextFormatting.GRAY + destroyCount;
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line1, x + 4, y + 4, 0xFFFFFF);
-        Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line2, x + 4, y + 4 + 10, 0xFFFFFF);
+        Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line2, x + 4, y + 4 + 12, 0xFFFFFF);
     }
 
     private static String getModeNameChinese(FilterMode mode) {
@@ -220,6 +230,27 @@ public class InventoryGuiButtonHandler {
             default:
                 return "关闭";
         }
+    }
+
+    private static boolean overlapsAny(List<GuiButton> buttons, int x, int y, int w, int h) {
+        if (buttons == null) {
+            return false;
+        }
+        for (GuiButton button : buttons) {
+            if (button == null) {
+                continue;
+            }
+            int bx = getButtonX(button);
+            int by = getButtonY(button);
+            if (x < bx + button.width && x + w > bx && y < by + button.height && y + h > by) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isPointInRect(int x, int y, int w, int h, int px, int py) {
+        return px >= x && px < x + w && py >= y && py < y + h;
     }
 
     private static ItemStack getHoveredStack(GuiScreen gui) {

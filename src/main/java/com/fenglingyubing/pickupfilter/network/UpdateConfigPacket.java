@@ -6,7 +6,6 @@ import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -15,12 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UpdateConfigPacket implements IMessage {
+    private String targetModeId;
     private List<String> rules;
 
     public UpdateConfigPacket() {
     }
 
-    public UpdateConfigPacket(List<FilterRule> rules) {
+    public UpdateConfigPacket(FilterMode targetMode, List<FilterRule> rules) {
+        this.targetModeId = (targetMode == null ? FilterMode.DISABLED : targetMode).getId();
         List<String> serialized = new ArrayList<>();
         if (rules != null) {
             for (FilterRule rule : rules) {
@@ -34,6 +35,7 @@ public class UpdateConfigPacket implements IMessage {
 
     @Override
     public void fromBytes(ByteBuf buf) {
+        targetModeId = ConfigSnapshotPacket.readString(buf, 32);
         int size = Math.max(0, Math.min(buf.readInt(), 512));
         rules = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -43,6 +45,7 @@ public class UpdateConfigPacket implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
+        ConfigSnapshotPacket.writeString(buf, targetModeId == null ? FilterMode.DISABLED.getId() : targetModeId);
         List<String> safeRules = rules == null ? new ArrayList<>() : rules;
         buf.writeInt(Math.min(safeRules.size(), 512));
         for (int i = 0; i < safeRules.size() && i < 512; i++) {
@@ -81,20 +84,42 @@ public class UpdateConfigPacket implements IMessage {
                     parsed = parsed.subList(0, 200);
                 }
 
-                FilterMode currentMode = store.getMode(player);
-                store.setRulesForMode(player, currentMode, parsed);
+                FilterMode targetMode = FilterMode.fromId(message.targetModeId);
+                store.setRulesForMode(player, targetMode, parsed);
                 player.sendMessage(new net.minecraft.util.text.TextComponentString(
-                        net.minecraft.util.text.TextFormatting.GRAY + "拾取筛：已保存规则（" + parsed.size() + " 条）"
+                        net.minecraft.util.text.TextFormatting.GRAY + "拾取筛：已保存"
+                                + (targetMode == FilterMode.DESTROY_MATCHING ? "销毁" : "拾取")
+                                + "列表（" + parsed.size() + " 条）"
                 ));
 
-                FilterMode mode = store.getMode(player);
-                List<String> serialized = new ArrayList<>();
-                for (FilterRule rule : parsed) {
-                    if (rule != null) {
-                        serialized.add(rule.serialize());
+                PlayerFilterConfigStore.Snapshot snapshot = store.getSnapshot(player);
+                FilterMode mode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+
+                List<String> pickupSerialized = new ArrayList<>();
+                List<FilterRule> pickupRules = snapshot == null ? null : snapshot.getPickupRules();
+                if (pickupRules != null) {
+                    for (FilterRule rule : pickupRules) {
+                        if (rule != null) {
+                            pickupSerialized.add(rule.serialize());
+                        }
                     }
                 }
-                PickupFilterNetwork.CHANNEL.sendTo(new ConfigSnapshotPacket(mode == null ? FilterMode.DISABLED.getId() : mode.getId(), serialized), player);
+
+                List<String> destroySerialized = new ArrayList<>();
+                List<FilterRule> destroyRules = snapshot == null ? null : snapshot.getDestroyRules();
+                if (destroyRules != null) {
+                    for (FilterRule rule : destroyRules) {
+                        if (rule != null) {
+                            destroySerialized.add(rule.serialize());
+                        }
+                    }
+                }
+
+                PickupFilterNetwork.CHANNEL.sendTo(new ConfigSnapshotPacket(
+                        mode == null ? FilterMode.DISABLED.getId() : mode.getId(),
+                        pickupSerialized,
+                        destroySerialized
+                ), player);
             });
 
             return null;

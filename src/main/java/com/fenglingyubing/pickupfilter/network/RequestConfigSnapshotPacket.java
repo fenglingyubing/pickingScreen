@@ -40,16 +40,34 @@ public class RequestConfigSnapshotPacket implements IMessage {
                     return;
                 }
 
-                FilterMode mode = store.getMode(player);
-                List<FilterRule> rules = store.getRulesForMode(player, mode);
-                List<String> serialized = new ArrayList<>();
-                for (FilterRule rule : rules) {
-                    if (rule != null) {
-                        serialized.add(rule.serialize());
+                PlayerFilterConfigStore.Snapshot snapshot = store.getSnapshot(player);
+                FilterMode mode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+
+                List<String> pickupSerialized = new ArrayList<>();
+                List<FilterRule> pickupRules = snapshot == null ? null : snapshot.getPickupRules();
+                if (pickupRules != null) {
+                    for (FilterRule rule : pickupRules) {
+                        if (rule != null) {
+                            pickupSerialized.add(rule.serialize());
+                        }
                     }
                 }
 
-                PickupFilterNetwork.CHANNEL.sendTo(new ConfigSnapshotPacket(mode == null ? FilterMode.DISABLED.getId() : mode.getId(), serialized), player);
+                List<String> destroySerialized = new ArrayList<>();
+                List<FilterRule> destroyRules = snapshot == null ? null : snapshot.getDestroyRules();
+                if (destroyRules != null) {
+                    for (FilterRule rule : destroyRules) {
+                        if (rule != null) {
+                            destroySerialized.add(rule.serialize());
+                        }
+                    }
+                }
+
+                PickupFilterNetwork.CHANNEL.sendTo(new ConfigSnapshotPacket(
+                        mode == null ? FilterMode.DISABLED.getId() : mode.getId(),
+                        pickupSerialized,
+                        destroySerialized
+                ), player);
             });
 
             return null;

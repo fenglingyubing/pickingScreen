@@ -91,8 +91,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
             helpButton = null;
         }
 
-        requestSnapshot();
         lastSnapshotRevision = ClientConfigSnapshotStore.getRevision();
+        requestSnapshot();
     }
 
     @Override
@@ -175,7 +175,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
     private void sendRulesUpdate() {
         List<FilterRule> rules = editor.getRules();
-        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(rules));
+        PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(mode, rules));
         requestSnapshot();
     }
 
@@ -251,7 +251,9 @@ public class PickupFilterConfigScreen extends GuiScreen {
         if (revision != lastSnapshotRevision) {
             lastSnapshotRevision = revision;
             ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
-            applySnapshot(snapshot.getMode(), snapshot.getRules());
+            FilterMode activeMode = snapshot == null ? FilterMode.DISABLED : snapshot.getMode();
+            List<FilterRule> activeRules = snapshot == null ? null : snapshot.getRulesForMode(activeMode);
+            applySnapshot(activeMode, activeRules);
         }
     }
 
