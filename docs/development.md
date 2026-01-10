@@ -54,3 +54,8 @@
   - 冲突：文件/原因/如何以 `origin/main` 为准保留最新改动
   - 测试：执行的命令 + 关键输出（如 `BUILD SUCCESSFUL`）
   - 合并：合并到 `main` 的确认（提交或 PR 链接）
+
+## 验证记录（任务 5/10）
+
+- `./gradlew test --no-daemon`：`BUILD SUCCESSFUL`（含 ForgeGradle 2.3.4 不受支持提示与 `stable_39` 映射警告）
+- `./gradlew build --no-daemon`：`BUILD SUCCESSFUL`（含同上警告）
