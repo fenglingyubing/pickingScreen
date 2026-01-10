@@ -60,8 +60,8 @@ public class InventoryGuiButtonHandler {
 
         GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
         if (lowestRightButton != null) {
-            targetX = lowestRightButton.xPosition;
-            targetY = lowestRightButton.yPosition + lowestRightButton.height + 2;
+            targetX = getButtonX(lowestRightButton);
+            targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 2;
             targetY = Math.min(targetY, gui.height - 22);
         }
 
@@ -187,17 +187,50 @@ public class InventoryGuiButtonHandler {
             if (button.width != 18 || button.height != 18) {
                 continue;
             }
-            if (button.xPosition < leftBound || button.xPosition > rightEdge + 60) {
+            int x = getButtonX(button);
+            int y = getButtonY(button);
+            if (x < leftBound || x > rightEdge + 60) {
                 continue;
             }
-            if (button.yPosition < topBound || button.yPosition > bottomBound) {
+            if (y < topBound || y > bottomBound) {
                 continue;
             }
-            if (best == null || button.yPosition > best.yPosition) {
+            if (best == null || y > getButtonY(best)) {
                 best = button;
             }
         }
         return best;
+    }
+
+    private static int getButtonX(GuiButton button) {
+        Integer value = readIntField(button, "x", "xPosition");
+        return value == null ? 0 : value;
+    }
+
+    private static int getButtonY(GuiButton button) {
+        Integer value = readIntField(button, "y", "yPosition");
+        return value == null ? 0 : value;
+    }
+
+    private static Integer readIntField(Object target, String... fieldNames) {
+        if (target == null || fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            if (fieldName == null || fieldName.isEmpty()) {
+                continue;
+            }
+            try {
+                Field field = target.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object value = field.get(target);
+                if (value instanceof Integer) {
+                    return (Integer) value;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     private static int[] readGuiContainerSize(GuiContainer gui) {
