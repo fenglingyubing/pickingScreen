@@ -18,6 +18,7 @@
 - 本项目使用 JUnit 4 + QuickTheories 编写属性测试（`./gradlew test` 会一并运行）。
 - 属性测试默认至少 100 次随机样例（以测试代码中的 `withExamples(...)` 为准）。
 - 对客户端/输入相关逻辑（如按键绑定）：优先用小型适配器接口隔离 Forge 的静态注册点（例如 `KeyBindingRegistrar`），在单元测试中用 fake 实现验证注册与按键触发逻辑，避免依赖启动 Minecraft 客户端。
+- 对“客户端触发、服务端执行”的输入功能（例如按键触发清除周围掉落物）：客户端只负责发包；服务端在主线程执行世界查询/实体移除，并通过聊天消息回传结果，避免客户端直接改世界状态导致不同步。
 
 ## 目录结构
 
@@ -59,3 +60,8 @@
 
 - `./gradlew test --no-daemon`：`BUILD SUCCESSFUL`（含 ForgeGradle 2.3.4 不受支持提示与 `stable_39` 映射警告）
 - `./gradlew build --no-daemon`：`BUILD SUCCESSFUL`（含同上警告）
+
+## 验证记录（任务 6）
+
+- `./gradlew test --no-daemon`：`BUILD SUCCESSFUL`（同上警告）
+- `./gradlew build --no-daemon`：`BUILD SUCCESSFUL`（同上警告）

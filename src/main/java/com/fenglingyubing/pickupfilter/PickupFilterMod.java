@@ -2,6 +2,7 @@ package com.fenglingyubing.pickupfilter;
 
 import com.fenglingyubing.pickupfilter.config.ConfigManager;
 import com.fenglingyubing.pickupfilter.event.CommonEventHandler;
+import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import com.fenglingyubing.pickupfilter.proxy.CommonProxy;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -42,6 +43,7 @@ public class PickupFilterMod {
         this.configManager = new ConfigManager(configFile);
         this.configManager.load();
         this.eventHandler = new CommonEventHandler(this.configManager);
+        PickupFilterNetwork.init();
         proxy.preInit(event);
     }
 

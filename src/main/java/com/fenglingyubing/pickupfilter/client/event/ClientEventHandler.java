@@ -1,8 +1,9 @@
 package com.fenglingyubing.pickupfilter.client.event;
 
 import com.fenglingyubing.pickupfilter.client.input.KeyBindingManager;
+import com.fenglingyubing.pickupfilter.network.ClearDropsPacket;
+import com.fenglingyubing.pickupfilter.network.PickupFilterNetwork;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -13,8 +14,10 @@ public class ClientEventHandler {
             return;
         }
 
-        if (Minecraft.getMinecraft().player != null) {
-            Minecraft.getMinecraft().player.sendMessage(new TextComponentString("TODO: 清除附近掉落物"));
+        if (Minecraft.getMinecraft().player == null) {
+            return;
         }
+
+        PickupFilterNetwork.CHANNEL.sendToServer(new ClearDropsPacket());
     }
 }
