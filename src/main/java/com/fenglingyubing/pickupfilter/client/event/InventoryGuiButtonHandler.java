@@ -64,7 +64,11 @@ public class InventoryGuiButtonHandler {
 
         if (hasRightSpace) {
             targetX = guiLeft + xSize + 4;
-            targetY = guiTop + ySize - 18;
+            int minY = guiTop + 6;
+            int maxY = guiTop + ySize - 18;
+            int preferredOffsetFromBottom = 54;
+            targetY = guiTop + ySize - 18 - preferredOffsetFromBottom;
+            targetY = Math.max(minY, Math.min(maxY, targetY));
         } else if (hasBottomSpace) {
             targetX = guiLeft + xSize - 18;
             targetY = guiTop + ySize + 4;
