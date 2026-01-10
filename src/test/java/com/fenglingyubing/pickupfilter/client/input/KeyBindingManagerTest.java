@@ -74,6 +74,21 @@ public class KeyBindingManagerTest {
     }
 
     @Test
+    public void matchesKeyBindingPress_matchesKeyCode() {
+        assertTrue(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, Keyboard.KEY_O, (char) 0));
+        assertTrue(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.CLEAR_DROPS_KEY, Keyboard.KEY_K, (char) 0));
+        assertTrue(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.OPEN_CONFIG_KEY, Keyboard.KEY_P, (char) 0));
+        assertFalse(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, Keyboard.KEY_P, (char) 0));
+    }
+
+    @Test
+    public void matchesKeyBindingPress_matchesLetterByCharWhenEventKeyIsNone() {
+        assertTrue(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, Keyboard.KEY_NONE, 'o'));
+        assertTrue(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, Keyboard.KEY_NONE, 'O'));
+        assertFalse(KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, Keyboard.KEY_NONE, 'p'));
+    }
+
+    @Test
     public void consumeOpenConfigKeyPress_consumesTicks() {
         AtomicInteger calls = new AtomicInteger();
         assertTrue(KeyBindingManager.consumeOpenConfigKeyPress(keyBinding -> {

@@ -41,6 +41,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
     private GuiButton applyButton;
     private GuiButton cycleModeButton;
     private GuiButton helpButton;
+    private GuiButton clientSettingsButton;
 
     private String status = TextFormatting.DARK_GRAY + "同步中…";
     private int lastSnapshotRevision = -1;
@@ -55,9 +56,9 @@ public class PickupFilterConfigScreen extends GuiScreen {
         int panelHeight = this.height - 52;
 
         int listX = panelX + 14;
-        int listY = panelY + 62;
+        int listY = panelY + 84;
         int listWidth = panelWidth - 28;
-        int listHeight = panelHeight - 140;
+        int listHeight = panelHeight - 162;
         listSlot = new RuleListSlot(listX, listY, listWidth, listHeight);
 
         ruleInput = new GuiTextField(10, fontRenderer, listX, panelY + panelHeight - 70, listWidth, 18);
@@ -90,6 +91,10 @@ public class PickupFilterConfigScreen extends GuiScreen {
         } else {
             helpButton = null;
         }
+
+        int clientRowY = panelY + 56;
+        int clientW = Math.min(160, listWidth);
+        clientSettingsButton = addButton(new GuiButton(7, listX, clientRowY, clientW, 18, "背包按钮：调整位置"));
 
         lastSnapshotRevision = ClientConfigSnapshotStore.getRevision();
         requestSnapshot();
@@ -164,6 +169,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
         if (button.id == 6) {
             mc.displayGuiScreen(new PickupFilterIntroScreen());
+        } else if (button.id == 7) {
+            mc.displayGuiScreen(new PickupFilterClientSettingsScreen(this));
         }
     }
 
@@ -284,7 +291,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
         int listX = panelX + 14;
         int panelBottom = panelY + panelHeight;
         drawString(fontRenderer, status == null ? "" : status, listX, panelBottom - 86, COLOR_MUTED);
-        drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：先添加/删除，再点“应用”同步到服务器", listX, panelBottom - 98, COLOR_MUTED);
+        drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：添加/删除会自动保存；“应用”仅作手动同步", listX, panelBottom - 98, COLOR_MUTED);
 
         GlStateManager.disableLighting();
         super.drawScreen(mouseX, mouseY, partialTicks);

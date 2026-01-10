@@ -1,12 +1,14 @@
 package com.fenglingyubing.pickupfilter.client.gui;
 
 import com.fenglingyubing.pickupfilter.client.PickupFilterClient;
+import com.fenglingyubing.pickupfilter.client.input.KeyBindingManager;
 import com.fenglingyubing.pickupfilter.client.settings.ClientSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
 
@@ -29,7 +31,7 @@ public class PickupFilterIntroScreen extends GuiScreen {
         int x = (this.width - panelWidth) / 2;
         int y = (this.height - 180) / 2 + 80;
 
-        openConfigButton = addButton(new GuiButton(1, x, y, panelWidth, 20, "打开配置 (P)"));
+        openConfigButton = addButton(new GuiButton(1, x, y, panelWidth, 20, "打开配置 (" + keyName(KeyBindingManager.OPEN_CONFIG_KEY) + ")"));
         closeButton = addButton(new GuiButton(2, x, y + 26, panelWidth, 20, "我知道了"));
     }
 
@@ -73,14 +75,21 @@ public class PickupFilterIntroScreen extends GuiScreen {
         int top = panelY + 64;
         int line = 0;
 
-        drawString(fontRenderer, TextFormatting.GRAY + "1) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + "O" + TextFormatting.RESET + " 切换模式", left, top + line++ * 12, 0xFFE7EEF5);
-        drawString(fontRenderer, TextFormatting.GRAY + "2) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + "K" + TextFormatting.RESET + " 清除附近掉落物", left, top + line++ * 12, 0xFFE7EEF5);
-        drawString(fontRenderer, TextFormatting.GRAY + "3) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + "P" + TextFormatting.RESET + " 打开配置界面，添加/删除过滤规则", left, top + line++ * 12, 0xFFE7EEF5);
+        drawString(fontRenderer, TextFormatting.GRAY + "1) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.TOGGLE_MODE_KEY) + TextFormatting.RESET + " 切换模式", left, top + line++ * 12, 0xFFE7EEF5);
+        drawString(fontRenderer, TextFormatting.GRAY + "2) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.CLEAR_DROPS_KEY) + TextFormatting.RESET + " 清除附近掉落物", left, top + line++ * 12, 0xFFE7EEF5);
+        drawString(fontRenderer, TextFormatting.GRAY + "3) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.OPEN_CONFIG_KEY) + TextFormatting.RESET + " 打开配置界面，添加/删除过滤规则", left, top + line++ * 12, 0xFFE7EEF5);
 
         line++;
         drawString(fontRenderer, TextFormatting.DARK_GRAY + "规则输入示例：minecraft:stone@0、minecraft:*、*:dirt", left, top + line++ * 12, 0xFF9AA7B3);
 
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private static String keyName(net.minecraft.client.settings.KeyBinding binding) {
+        if (binding == null) {
+            return "?";
+        }
+        return GameSettings.getKeyDisplayString(binding.getKeyCode());
     }
 
     private void drawBackdrop(float partialTicks) {
@@ -114,4 +123,3 @@ public class PickupFilterIntroScreen extends GuiScreen {
         super.keyTyped(typedChar, keyCode);
     }
 }
-

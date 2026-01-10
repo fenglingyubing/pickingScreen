@@ -59,4 +59,32 @@ public final class KeyBindingManager {
     static boolean consumeOpenConfigKeyPress(KeyPressReader keyPressReader) {
         return keyPressReader.isPressed(OPEN_CONFIG_KEY);
     }
+
+    public static boolean matchesKeyBindingPress(KeyBinding binding, int eventKey, char eventChar) {
+        if (binding == null) {
+            return false;
+        }
+
+        int keyCode = binding.getKeyCode();
+        if (keyCode == Keyboard.KEY_NONE) {
+            return false;
+        }
+
+        if (eventKey == keyCode) {
+            return true;
+        }
+
+        if (eventKey != Keyboard.KEY_NONE || eventChar == 0) {
+            return false;
+        }
+
+        String keyName = Keyboard.getKeyName(keyCode);
+        if (keyName == null || keyName.length() != 1) {
+            return false;
+        }
+
+        char expected = Character.toLowerCase(keyName.charAt(0));
+        char actual = Character.toLowerCase(eventChar);
+        return expected == actual;
+    }
 }

@@ -1,6 +1,8 @@
 package com.fenglingyubing.pickupfilter.client.event;
 
+import com.fenglingyubing.pickupfilter.client.PickupFilterClient;
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterMatcherScreen;
+import com.fenglingyubing.pickupfilter.client.settings.ClientSettings;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.network.ClientConfigSnapshotStore;
@@ -88,6 +90,15 @@ public class InventoryGuiButtonHandler {
                 }
             }
         }
+
+        ClientSettings settings = PickupFilterClient.getClientSettings();
+        int offsetX = settings == null ? 0 : settings.getInventoryButtonOffsetX();
+        int offsetY = settings == null ? 0 : settings.getInventoryButtonOffsetY();
+        targetX += offsetX;
+        targetY += offsetY;
+
+        targetX = clamp(targetX, 4, gui.width - 18 - 4);
+        targetY = clamp(targetY, 4, gui.height - 18 - 4);
 
         buttons.add(new GuiButton(BUTTON_ID, targetX, targetY, 18, 18, "筛"));
     }
@@ -251,6 +262,10 @@ public class InventoryGuiButtonHandler {
 
     private static boolean isPointInRect(int x, int y, int w, int h, int px, int py) {
         return px >= x && px < x + w && py >= y && py < y + h;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static ItemStack getHoveredStack(GuiScreen gui) {

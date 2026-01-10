@@ -6,7 +6,8 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -40,11 +41,10 @@ public class ClearDropsPacket implements IMessage {
                 List<EntityItem> drops = player.world.getEntitiesWithinAABB(EntityItem.class, scanBox);
                 DropClearLogic.clearAll(drops, drop -> drop.isDead, EntityItem::setDead);
 
-                player.sendMessage(new TextComponentTranslation("pickupfilter.message.cleared_drops"));
+                player.sendMessage(new TextComponentString(TextFormatting.GRAY + "拾取筛：已清除周围掉落物"));
             });
 
             return null;
         }
     }
 }
-

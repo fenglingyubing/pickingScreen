@@ -16,6 +16,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.lwjgl.input.Keyboard;
 
 public class ClientEventHandler {
     private boolean introChecked;
@@ -25,24 +26,31 @@ public class ClientEventHandler {
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (Minecraft.getMinecraft().player == null) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.player == null) {
             return;
         }
 
-        if (KeyBindingManager.consumeClearDropsKeyPress()) {
+        if (!Keyboard.getEventKeyState() || Keyboard.isRepeatEvent()) {
+            return;
+        }
+
+        int eventKey = Keyboard.getEventKey();
+        char eventChar = Keyboard.getEventCharacter();
+
+        if (KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.CLEAR_DROPS_KEY, eventKey, eventChar)) {
             PickupFilterNetwork.CHANNEL.sendToServer(new ClearDropsPacket());
         }
 
-        if (KeyBindingManager.consumeToggleModeKeyPress()) {
+        if (KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, eventKey, eventChar)) {
             PickupFilterNetwork.CHANNEL.sendToServer(new CycleModePacket());
-            Minecraft mc = Minecraft.getMinecraft();
             if (mc.player != null) {
                 mc.player.sendStatusMessage(new TextComponentString(TextFormatting.GRAY + "拾取筛：已发送切换请求，等待同步…"), true);
             }
         }
 
-        if (KeyBindingManager.consumeOpenConfigKeyPress() && Minecraft.getMinecraft().currentScreen == null) {
-            Minecraft.getMinecraft().displayGuiScreen(new PickupFilterConfigScreen());
+        if (KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.OPEN_CONFIG_KEY, eventKey, eventChar) && mc.currentScreen == null) {
+            mc.displayGuiScreen(new PickupFilterConfigScreen());
         }
     }
 
