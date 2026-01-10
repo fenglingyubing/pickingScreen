@@ -3,10 +3,19 @@
 ## 安装
 
 1. 确认版本：本模组适用于 **Minecraft 1.12.2 + Forge**。
-2. 将构建/下载得到的 `pickupfilter-*.jar` 放入：
-   - 单人/客户端：实例目录的 `mods/`
+2. 将构建/下载得到的 `pickupfilter-*.jar` 放入 `mods/`（不要解压，直接放 `.jar` 文件）：
+   - 单人/客户端：你的“实例目录”下的 `mods/`
    - 多人：**服务端与客户端都需要安装**（服务端负责执行过滤逻辑；客户端负责按键与配置界面）
+   - 如果没有 `mods/` 文件夹：自己新建一个 `mods` 文件夹即可
+3. 怎么找到“实例目录 / mods”：
+   - 官方启动器（Minecraft Launcher）默认 `.minecraft`：
+     - Windows：`%AppData%\\.minecraft\\mods`
+     - macOS：`~/Library/Application Support/minecraft/mods`
+     - Linux：`~/.minecraft/mods`
+   - 多开启动器（MultiMC / Prism / HMCL / CurseForge 等）：在启动器里打开该实例的“文件夹/目录”，然后进入 `mods/`
+   - 服务器：把 Jar 放到服务端根目录的 `mods/`，重启服务端
 3. 进入世界后，首次会自动弹出“首次使用说明”界面（可从中直接打开配置）。
+4. 验证是否生效：主菜单或游戏内按 `ESC` → `Mod 列表`，能看到 `Pickup Filter (拾取筛)` 即表示加载成功。
 
 ## 默认快捷键
 
@@ -82,4 +91,3 @@
 
 - 打开配置界面一直显示“同步中…”：通常是服务端未安装模组或网络同步未建立；确认服务端也装了同版本模组，并重新进入世界/服务器。
 - 发现“拾取匹配掉落物”怎么什么都捡不到：这是白名单模式，请先把你想捡的物品加进规则列表并点“应用”。
-
