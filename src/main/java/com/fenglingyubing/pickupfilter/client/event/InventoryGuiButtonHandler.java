@@ -102,8 +102,8 @@ public class InventoryGuiButtonHandler {
         FilterRule rule = new FilterRule(registryName.getNamespace(), registryName.getPath(), hovered.getMetadata(), false);
         ClientConfigSnapshotStore.Snapshot snapshot = ClientConfigSnapshotStore.getSnapshot();
         List<FilterRule> existing = snapshot == null ? null : snapshot.getRules();
-        List<FilterRule> merged = mergeRules(existing, rule);
-        if (existing != null && existing.size() == merged.size()) {
+        boolean alreadyExists = existing != null && existing.contains(rule);
+        if (alreadyExists) {
             mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "已在规则中："
                     + TextFormatting.AQUA + registryName.getNamespace()
                     + TextFormatting.DARK_GRAY + ":"
@@ -112,6 +112,8 @@ public class InventoryGuiButtonHandler {
                     + TextFormatting.AQUA + hovered.getMetadata()), true);
             return;
         }
+
+        List<FilterRule> merged = mergeRules(existing, rule);
 
         PickupFilterNetwork.CHANNEL.sendToServer(new UpdateConfigPacket(merged));
         PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
