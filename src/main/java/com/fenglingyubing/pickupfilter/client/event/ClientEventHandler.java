@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ClientEventHandler {
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (!KeyBindingManager.CLEAR_DROPS_KEY.isPressed()) {
+        if (!KeyBindingManager.consumeClearDropsKeyPress()) {
             return;
         }
 
@@ -18,4 +18,3 @@ public class ClientEventHandler {
         }
     }
 }
-

@@ -15,7 +15,14 @@ public final class KeyBindingManager {
     );
 
     public static void registerKeyBindings() {
-        ClientRegistry.registerKeyBinding(CLEAR_DROPS_KEY);
+        registerKeyBindings(ClientRegistry::registerKeyBinding);
+    }
+
+    static void registerKeyBindings(KeyBindingRegistrar registrar) {
+        registrar.register(CLEAR_DROPS_KEY);
+    }
+
+    public static boolean consumeClearDropsKeyPress() {
+        return CLEAR_DROPS_KEY.isPressed();
     }
 }
-

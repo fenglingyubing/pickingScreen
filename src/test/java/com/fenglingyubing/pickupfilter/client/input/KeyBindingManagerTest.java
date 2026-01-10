@@ -1,0 +1,42 @@
+package com.fenglingyubing.pickupfilter.client.input;
+
+import net.minecraft.client.settings.KeyBinding;
+import org.junit.Test;
+import org.lwjgl.input.Keyboard;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
+public class KeyBindingManagerTest {
+    @Test
+    public void clearDropsKey_isK_andHasTranslationKeys() {
+        assertEquals("key.pickupfilter.clear_drops", KeyBindingManager.CLEAR_DROPS_KEY.getKeyDescription());
+        assertEquals("key.categories.pickupfilter", KeyBindingManager.CLEAR_DROPS_KEY.getKeyCategory());
+        assertEquals(Keyboard.KEY_K, KeyBindingManager.CLEAR_DROPS_KEY.getKeyCode());
+    }
+
+    @Test
+    public void registerKeyBindings_delegatesToRegistrar() {
+        List<KeyBinding> registered = new ArrayList<>();
+        KeyBindingManager.registerKeyBindings(registered::add);
+        assertEquals(1, registered.size());
+        assertSame(KeyBindingManager.CLEAR_DROPS_KEY, registered.get(0));
+    }
+
+    @Test
+    public void consumeClearDropsKeyPress_consumesTicks() {
+        while (KeyBindingManager.consumeClearDropsKeyPress()) {
+            // Drain any previous state.
+        }
+
+        KeyBinding.onTick(Keyboard.KEY_K);
+        assertTrue(KeyBindingManager.consumeClearDropsKeyPress());
+        assertFalse(KeyBindingManager.consumeClearDropsKeyPress());
+    }
+}
+

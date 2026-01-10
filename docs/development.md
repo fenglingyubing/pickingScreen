@@ -17,6 +17,7 @@
 
 - 本项目使用 JUnit 4 + QuickTheories 编写属性测试（`./gradlew test` 会一并运行）。
 - 属性测试默认至少 100 次随机样例（以测试代码中的 `withExamples(...)` 为准）。
+- 对客户端/输入相关逻辑（如按键绑定）：优先用小型适配器接口隔离 Forge 的静态注册点（例如 `KeyBindingRegistrar`），在单元测试中用 fake 实现验证注册与按键触发逻辑，避免依赖启动 Minecraft 客户端。
 
 ## 目录结构
 

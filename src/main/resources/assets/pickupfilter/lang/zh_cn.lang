@@ -1,2 +1,4 @@
 pickupfilter.message.cleared_drops=已清除周围掉落物
+key.pickupfilter.clear_drops=清除附近掉落物
+key.categories.pickupfilter=拾取筛
 
