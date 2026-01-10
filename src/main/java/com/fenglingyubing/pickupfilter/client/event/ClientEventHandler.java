@@ -38,7 +38,7 @@ public class ClientEventHandler {
             PickupFilterNetwork.CHANNEL.sendToServer(new CycleModePacket());
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.player != null) {
-                mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "拾取筛：已请求切换模式…"), true);
+                mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "拾取筛：已发送切换请求，等待同步…"), true);
             }
         }
 
@@ -73,7 +73,7 @@ public class ClientEventHandler {
             } else if (mode != null && mode != lastKnownMode) {
                 lastKnownMode = mode;
                 mc.player.sendStatusMessage(new TextComponentString(
-                        TextFormatting.GRAY + "拾取筛模式："
+                        TextFormatting.GRAY + "拾取筛：模式已切换为 "
                                 + TextFormatting.AQUA + I18n.format(mode.getTranslationKey())
                 ), true);
             }

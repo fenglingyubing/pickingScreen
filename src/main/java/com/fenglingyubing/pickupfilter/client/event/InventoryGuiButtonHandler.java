@@ -61,7 +61,7 @@ public class InventoryGuiButtonHandler {
         GuiButton lowestRightButton = findLowestRightSmallButton(buttons, guiLeft, guiTop, xSize, ySize);
         if (lowestRightButton != null) {
             targetX = getButtonX(lowestRightButton);
-            targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 2;
+            targetY = getButtonY(lowestRightButton) + lowestRightButton.height + 6;
             targetY = Math.min(targetY, gui.height - 22);
         }
 
