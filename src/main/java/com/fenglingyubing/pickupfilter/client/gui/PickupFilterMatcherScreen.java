@@ -112,10 +112,13 @@ public class PickupFilterMatcherScreen extends GuiScreen {
 
         int tabY = Math.max(4, panelY - 24);
         int tabX = panelX + 8;
-        int tabW = 78;
-        int tabGap = 4;
+        int tabsGap = 4;
+        int tabsToPagerGap = 4;
+        int pagerBlockW = 20 * 2;
+        int tabsAvailableW = panelW - 8 - pagerBlockW - tabsToPagerGap;
+        int tabW = (tabsAvailableW - tabsGap) / 2;
         tabPickupButton = addButton(new GuiButton(21, tabX, tabY, tabW, 20, "拾取列表"));
-        tabDestroyButton = addButton(new GuiButton(22, tabX + tabW + tabGap, tabY, tabW, 20, "销毁列表"));
+        tabDestroyButton = addButton(new GuiButton(22, tabX + tabW + tabsGap, tabY, tabW, 20, "销毁列表"));
 
         int pagerY = tabY;
         nextPageButton = addButton(new GuiButton(24, panelX + panelW - 20, pagerY, 20, 20, ">"));
