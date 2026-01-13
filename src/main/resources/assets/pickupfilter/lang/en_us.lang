@@ -1,10 +1,10 @@
-pickupfilter.message.cleared_drops=Cleared nearby drops
+pickupfilter.message.cleared_drops=Cleared nearby drops and ground arrows
 pickupfilter.message.mode_changed=Mode switched to: %s
 pickupfilter.message.config_updated=Config updated (%s rules)
 pickupfilter.mode.destroy_matching=Destroy matching drops
 pickupfilter.mode.pickup_matching=Pickup matching drops
 pickupfilter.mode.disabled=Disabled
-key.pickupfilter.clear_drops=Clear nearby drops
+key.pickupfilter.clear_drops=Clear nearby drops/arrows
 key.pickupfilter.toggle_mode=Toggle Pickup Filter mode
 key.pickupfilter.open_config=Open Pickup Filter config
 key.categories.pickupfilter=Pickup Filter
