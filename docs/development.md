@@ -95,6 +95,7 @@
 
 - 入口：玩家背包（默认 `E`）界面新增 “筛” 按钮（优先放在背包右下角附近，避免遮挡其他模组按钮），打开 `PickupFilterMatcherScreen`。
 - 如果 “筛” 按钮与其他模组按钮重叠/被遮挡：可在 `P` 打开的配置界面点击 `背包按钮：调整位置`，对按钮做像素级偏移（保存到 `config/pickupfilter-client.properties` 的 `inventory.button.offset_x/y`）。
+- 清除范围：可在 `P` 打开的配置界面点击 `清除范围：...` 调整（写入 `config/pickupfilter-common.properties` 的 `clear_drops.chunk_radius`）。
 - 风格：`PickupFilterMatcherScreen` 采用**原版容器 GUI 的经典灰色配色**（使用 `textures/gui/container/generic_54.png` 的布局/槽位风格），并保持“上方匹配列表 + 下方背包”的 9×3 / 9×(3+热键栏) 格子结构；重新打开时会从服务端快照加载并显示当前已保存的物品规则（拾取/销毁两份列表各自独立显示）。
 - 保存策略：匹配界面添加/移除会**自动保存**；配置界面添加/删除也会自动保存（“存/应用”按钮仅作为手动同步兜底）。
 - 匹配界面：

@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.client.gui;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.config.FilterModeCycle;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
@@ -42,6 +43,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
     private GuiButton cycleModeButton;
     private GuiButton helpButton;
     private GuiButton clientSettingsButton;
+    private GuiButton clearRadiusButton;
 
     private String status = TextFormatting.DARK_GRAY + "同步中…";
     private int lastSnapshotRevision = -1;
@@ -50,7 +52,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
 
-        int panelWidth = Math.min(420, this.width - 30);
+        int panelWidth = Math.min(520, this.width - 30);
         int panelX = (this.width - panelWidth) / 2;
         int panelY = 26;
         int panelHeight = this.height - 52;
@@ -93,11 +95,13 @@ public class PickupFilterConfigScreen extends GuiScreen {
         }
 
         int clientRowY = panelY + 56;
-        int clientW = Math.min(160, listWidth);
-        clientSettingsButton = addButton(new GuiButton(7, listX, clientRowY, clientW, 18, "背包按钮：调整位置"));
+        int halfClientW = Math.min(200, (listWidth - gap) / 2);
+        clientSettingsButton = addButton(new GuiButton(7, listX, clientRowY, halfClientW, 18, "背包按钮：调整位置"));
+        clearRadiusButton = addButton(new GuiButton(8, listX + halfClientW + gap, clientRowY, listWidth - (halfClientW + gap), 18, "清除范围：加载中"));
 
         lastSnapshotRevision = ClientConfigSnapshotStore.getRevision();
         requestSnapshot();
+        updateClearRadiusButton();
     }
 
     @Override
@@ -175,6 +179,8 @@ public class PickupFilterConfigScreen extends GuiScreen {
             mc.displayGuiScreen(new PickupFilterIntroScreen());
         } else if (button.id == 7) {
             mc.displayGuiScreen(new PickupFilterClientSettingsScreen(this));
+        } else if (button.id == 8) {
+            mc.displayGuiScreen(new PickupFilterClearRadiusScreen(this));
         }
     }
 
@@ -257,6 +263,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
         if (removeButton != null) {
             removeButton.enabled = editor.getSelectedIndex() >= 0;
         }
+        updateClearRadiusButton();
 
         int revision = ClientConfigSnapshotStore.getRevision();
         if (revision != lastSnapshotRevision) {
@@ -273,7 +280,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
         drawDefaultBackground();
         drawRect(0, 0, width, height, COLOR_BG);
 
-        int panelWidth = Math.min(420, this.width - 30);
+        int panelWidth = Math.min(520, this.width - 30);
         int panelX = (this.width - panelWidth) / 2;
         int panelY = 26;
         int panelHeight = this.height - 52;
@@ -284,6 +291,14 @@ public class PickupFilterConfigScreen extends GuiScreen {
         drawCenteredString(fontRenderer, TextFormatting.BOLD + "拾取筛 · 配置", this.width / 2, panelY + 10, COLOR_ACCENT);
         drawCenteredString(fontRenderer, TextFormatting.DARK_GRAY + "输入规则：modid:item@meta  或  modid:*  或  *:item", this.width / 2, panelY + 24, COLOR_MUTED);
 
+        int listX = panelX + 14;
+        int listY = panelY + 84;
+        int listWidth = panelWidth - 28;
+        int listHeight = panelHeight - 162;
+        drawRect(listX, listY, listX + listWidth, listY + listHeight, 0x90040A0F);
+        drawRect(listX, listY, listX + listWidth, listY + 1, 0x50000000);
+        drawRect(listX, listY + listHeight - 1, listX + listWidth, listY + listHeight, 0x50000000);
+
         if (listSlot != null) {
             listSlot.drawScreen(mouseX, mouseY, partialTicks);
         }
@@ -292,7 +307,6 @@ public class PickupFilterConfigScreen extends GuiScreen {
             ruleInput.drawTextBox();
         }
 
-        int listX = panelX + 14;
         int panelBottom = panelY + panelHeight;
         drawString(fontRenderer, status == null ? "" : status, listX, panelBottom - 86, COLOR_MUTED);
         drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：添加/删除会自动保存；“应用”仅作手动同步", listX, panelBottom - 98, COLOR_MUTED);
@@ -339,6 +353,12 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
             FilterRule rule = rules.get(entryId);
             String text = rule == null ? "" : rule.serialize();
+            int maxWidth = Math.max(0, w - 14);
+            if (fontRenderer.getStringWidth(text) > maxWidth) {
+                String ellipsis = "…";
+                int available = Math.max(0, maxWidth - fontRenderer.getStringWidth(ellipsis));
+                text = fontRenderer.trimStringToWidth(text, available) + ellipsis;
+            }
             int color = isSelected(entryId) ? COLOR_ACCENT : COLOR_TEXT;
             fontRenderer.drawString(text, x + 6, yPos + 2, color);
         }
@@ -352,5 +372,13 @@ public class PickupFilterConfigScreen extends GuiScreen {
         protected int getScrollBarX() {
             return x + w - 6;
         }
+    }
+
+    private void updateClearRadiusButton() {
+        if (clearRadiusButton == null) {
+            return;
+        }
+        int radius = PickupFilterCommon.getCommonSettings().getClearDropsChunkRadius();
+        clearRadiusButton.displayString = "清除范围：" + radius + " 区块 (0~16)";
     }
 }

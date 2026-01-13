@@ -18,13 +18,33 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import java.util.List;
 
 public class ClearDropsPacket implements IMessage {
+    private int chunkRadius = -1;
+
+    public ClearDropsPacket() {
+    }
+
+    public ClearDropsPacket(int chunkRadius) {
+        this.chunkRadius = chunkRadius;
+    }
+
+    public int getChunkRadius() {
+        return chunkRadius;
+    }
 
     @Override
     public void fromBytes(ByteBuf buf) {
+        if (buf != null && buf.readableBytes() >= 4) {
+            chunkRadius = buf.readInt();
+        } else {
+            chunkRadius = -1;
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        if (buf != null) {
+            buf.writeInt(chunkRadius);
+        }
     }
 
     public static class Handler implements IMessageHandler<ClearDropsPacket, IMessage> {
@@ -40,7 +60,11 @@ public class ClearDropsPacket implements IMessage {
                     return;
                 }
 
-                int chunkRadius = PickupFilterCommon.getCommonSettings().getClearDropsChunkRadius();
+                int chunkRadius = message == null ? -1 : message.getChunkRadius();
+                if (chunkRadius < 0) {
+                    chunkRadius = PickupFilterCommon.getCommonSettings().getClearDropsChunkRadius();
+                }
+                chunkRadius = clampChunkRadius(chunkRadius);
                 AxisAlignedBB scanBox = DropClearArea.chunkRadiusArea(player, chunkRadius);
                 List<EntityItem> drops = player.world.getEntitiesWithinAABB(EntityItem.class, scanBox);
                 DropClearLogic.clearAll(drops, drop -> drop.isDead, EntityItem::setDead);
@@ -55,6 +79,10 @@ public class ClearDropsPacket implements IMessage {
 
             return null;
         }
+    }
+
+    private static int clampChunkRadius(int value) {
+        return Math.max(0, Math.min(16, value));
     }
 
     private static void clearGroundArrows(List<EntityArrow> arrows) {

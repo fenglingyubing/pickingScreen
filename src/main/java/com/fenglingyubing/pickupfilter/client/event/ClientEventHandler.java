@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.client.event;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import com.fenglingyubing.pickupfilter.client.PickupFilterClient;
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterConfigScreen;
 import com.fenglingyubing.pickupfilter.client.gui.PickupFilterIntroScreen;
@@ -39,7 +40,8 @@ public class ClientEventHandler {
         char eventChar = Keyboard.getEventCharacter();
 
         if (KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.CLEAR_DROPS_KEY, eventKey, eventChar)) {
-            PickupFilterNetwork.CHANNEL.sendToServer(new ClearDropsPacket());
+            int chunkRadius = PickupFilterCommon.getCommonSettings().getClearDropsChunkRadius();
+            PickupFilterNetwork.CHANNEL.sendToServer(new ClearDropsPacket(chunkRadius));
         }
 
         if (KeyBindingManager.matchesKeyBindingPress(KeyBindingManager.TOGGLE_MODE_KEY, eventKey, eventChar)) {

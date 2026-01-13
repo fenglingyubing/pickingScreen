@@ -31,6 +31,7 @@
 
 - 文件：`config/pickupfilter-common.properties`
 - 字段：`clear_drops.chunk_radius`（单位：区块；默认：`2`；范围：`0~16`）
+- 也可在游戏内按 `P` 打开配置界面，通过 `清除范围：...` 按钮直接调整（会写入上述配置文件）
 
 ## 三种模式怎么用（核心概念）
 

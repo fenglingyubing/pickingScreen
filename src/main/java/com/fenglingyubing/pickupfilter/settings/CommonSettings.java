@@ -63,6 +63,16 @@ public class CommonSettings {
         return clearDropsChunkRadius;
     }
 
+    public synchronized void setClearDropsChunkRadius(int chunkRadius) {
+        clearDropsChunkRadius = clampInt(chunkRadius, CLEAR_DROPS_CHUNK_RADIUS_MIN, CLEAR_DROPS_CHUNK_RADIUS_MAX);
+        save();
+    }
+
+    public synchronized void resetClearDropsChunkRadius() {
+        clearDropsChunkRadius = DropClearArea.DEFAULT_CHUNK_RADIUS;
+        save();
+    }
+
     private static int parseInt(String value, int fallback) {
         if (value == null) {
             return fallback;
@@ -78,4 +88,3 @@ public class CommonSettings {
         return Math.max(min, Math.min(max, value));
     }
 }
-
