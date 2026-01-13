@@ -29,6 +29,9 @@ public class PickupFilterConfigScreen extends GuiScreen {
     private static final int COLOR_ACCENT = 0xFF67F3A4;
     private static final int COLOR_MUTED = 0xFF9AA7B3;
     private static final int COLOR_TEXT = 0xFFE7EEF5;
+    private static final int COLOR_TEXT_SOFT = 0xFFCBD6E0;
+    private static final int COLOR_OUTLINE_SOFT = 0x4D0B0F14;
+    private static final int COLOR_OUTLINE_HARD = 0x80242C35;
 
     private final FilterRulesEditor editor = new FilterRulesEditor();
     private FilterMode mode = FilterMode.DISABLED;
@@ -65,39 +68,42 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
         ruleInput = new GuiTextField(10, fontRenderer, listX, panelY + panelHeight - 70, listWidth, 18);
         ruleInput.setMaxStringLength(128);
+        ruleInput.setEnableBackgroundDrawing(false);
+        ruleInput.setTextColor(COLOR_TEXT);
+        ruleInput.setDisabledTextColour(COLOR_MUTED);
 
         int buttonRowY = panelY + panelHeight - 46;
         int half = (listWidth - 6) / 2;
-        addButton = addButton(new GuiButton(1, listX, buttonRowY, half, 20, "添加规则"));
-        addHandButton = addButton(new GuiButton(2, listX + half + 6, buttonRowY, half, 20, "添加手持物品"));
+        addButton = addButton(new NeonButton(1, listX, buttonRowY, half, 20, "添加规则").accent());
+        addHandButton = addButton(new NeonButton(2, listX + half + 6, buttonRowY, half, 20, "添加手持物品"));
 
         int smallY = panelY + 32;
         int buttonX = listX;
         int gap = 6;
 
         int cycleW = Math.min(140, listWidth);
-        cycleModeButton = addButton(new GuiButton(3, buttonX, smallY, cycleW, 20, "模式：加载中"));
+        cycleModeButton = addButton(new NeonButton(3, buttonX, smallY, cycleW, 20, "模式：加载中"));
         buttonX += cycleW + gap;
 
         int removeW = Math.min(90, Math.max(0, listWidth - (cycleW + gap)));
-        removeButton = addButton(new GuiButton(4, buttonX, smallY, removeW, 20, "删除选中"));
+        removeButton = addButton(new NeonButton(4, buttonX, smallY, removeW, 20, "删除选中").danger());
         buttonX += removeW + gap;
 
         int applyW = Math.min(70, Math.max(0, listWidth - (cycleW + gap + removeW + gap)));
-        applyButton = addButton(new GuiButton(5, buttonX, smallY, applyW, 20, "应用"));
+        applyButton = addButton(new NeonButton(5, buttonX, smallY, applyW, 20, "应用").accent());
         buttonX += applyW + gap;
 
         int helpW = Math.max(0, listWidth - (cycleW + gap + removeW + gap + applyW + gap));
         if (helpW >= 50) {
-            helpButton = addButton(new GuiButton(6, buttonX, smallY, helpW, 20, "帮助"));
+            helpButton = addButton(new NeonButton(6, buttonX, smallY, helpW, 20, "帮助"));
         } else {
             helpButton = null;
         }
 
         int clientRowY = panelY + 56;
         int halfClientW = Math.min(200, (listWidth - gap) / 2);
-        clientSettingsButton = addButton(new GuiButton(7, listX, clientRowY, halfClientW, 18, "背包按钮：调整位置"));
-        clearRadiusButton = addButton(new GuiButton(8, listX + halfClientW + gap, clientRowY, listWidth - (halfClientW + gap), 18, "清除范围：加载中"));
+        clientSettingsButton = addButton(new NeonButton(7, listX, clientRowY, halfClientW, 18, "背包按钮：调整位置").subtle());
+        clearRadiusButton = addButton(new NeonButton(8, listX + halfClientW + gap, clientRowY, listWidth - (halfClientW + gap), 18, "清除范围：加载中").subtle());
 
         lastSnapshotRevision = ClientConfigSnapshotStore.getRevision();
         requestSnapshot();
@@ -278,15 +284,14 @@ public class PickupFilterConfigScreen extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        drawRect(0, 0, width, height, COLOR_BG);
+        drawBackdrop();
 
         int panelWidth = Math.min(520, this.width - 30);
         int panelX = (this.width - panelWidth) / 2;
         int panelY = 26;
         int panelHeight = this.height - 52;
 
-        drawGradientRect(panelX, panelY, panelX + panelWidth, panelY + panelHeight, COLOR_PANEL, 0xE0080A0D);
-        drawRect(panelX, panelY, panelX + panelWidth, panelY + 1, COLOR_ACCENT);
+        drawPanel(panelX, panelY, panelWidth, panelHeight);
 
         drawCenteredString(fontRenderer, TextFormatting.BOLD + "拾取筛 · 配置", this.width / 2, panelY + 10, COLOR_ACCENT);
         drawCenteredString(fontRenderer, TextFormatting.DARK_GRAY + "输入规则：modid:item@meta  或  modid:*  或  *:item", this.width / 2, panelY + 24, COLOR_MUTED);
@@ -295,24 +300,102 @@ public class PickupFilterConfigScreen extends GuiScreen {
         int listY = panelY + 84;
         int listWidth = panelWidth - 28;
         int listHeight = panelHeight - 162;
-        drawRect(listX, listY, listX + listWidth, listY + listHeight, 0x90040A0F);
-        drawRect(listX, listY, listX + listWidth, listY + 1, 0x50000000);
-        drawRect(listX, listY + listHeight - 1, listX + listWidth, listY + listHeight, 0x50000000);
+        drawInsetPanel(listX, listY, listWidth, listHeight);
+        drawString(fontRenderer, TextFormatting.DARK_GRAY + "规则列表（" + editor.getRules().size() + "）", listX + 2, panelY + 76, COLOR_MUTED);
 
         if (listSlot != null) {
             listSlot.drawScreen(mouseX, mouseY, partialTicks);
         }
 
         if (ruleInput != null) {
+            int inputX = listX;
+            int inputY = panelY + panelHeight - 70;
+            int inputW = listWidth;
+            int inputH = 18;
+            drawTextFieldChrome(inputX, inputY, inputW, inputH, ruleInput.isFocused());
             ruleInput.drawTextBox();
+            if (!ruleInput.isFocused() && (ruleInput.getText() == null || ruleInput.getText().trim().isEmpty())) {
+                drawString(fontRenderer, TextFormatting.DARK_GRAY + "例如：minecraft:rotten_flesh@0  /  minecraft:*  /  *:string", inputX + 7, inputY + 5, COLOR_MUTED);
+            }
         }
 
         int panelBottom = panelY + panelHeight;
-        drawString(fontRenderer, status == null ? "" : status, listX, panelBottom - 86, COLOR_MUTED);
+        drawString(fontRenderer, status == null ? "" : status, listX, panelBottom - 86, COLOR_TEXT_SOFT);
         drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：添加/删除会自动保存；“应用”仅作手动同步", listX, panelBottom - 98, COLOR_MUTED);
 
         GlStateManager.disableLighting();
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private void drawBackdrop() {
+        drawGradientRect(0, 0, width, height, 0xFF071421, 0xFF05070B);
+
+        int edge = 72;
+        drawGradientRect(0, 0, width, edge, 0x2400E5FF, 0x00000000);
+        drawGradientRect(0, height - edge, width, height, 0x00000000, 0x2A000000);
+
+        int step = 36;
+        int line = 1;
+        for (int y = -width; y < height + width; y += step) {
+            int x1 = 0;
+            int y1 = y;
+            int x2 = width;
+            int y2 = y + width;
+            drawLine(x1, y1, x2, y2, line, 0x0CFFFFFF);
+        }
+    }
+
+    private void drawPanel(int x, int y, int w, int h) {
+        drawGradientRect(x, y, x + w, y + h, COLOR_PANEL, 0xE0090B0E);
+        drawRect(x, y, x + w, y + 1, COLOR_ACCENT);
+        drawRect(x, y + h - 1, x + w, y + h, COLOR_OUTLINE_SOFT);
+        drawRect(x, y, x + 1, y + h, COLOR_OUTLINE_SOFT);
+        drawRect(x + w - 1, y, x + w, y + h, COLOR_OUTLINE_SOFT);
+
+        int notch = 10;
+        drawRect(x, y, x + notch, y + 2, COLOR_ACCENT);
+        drawRect(x + w - notch, y, x + w, y + 2, COLOR_ACCENT);
+    }
+
+    private void drawInsetPanel(int x, int y, int w, int h) {
+        drawGradientRect(x, y, x + w, y + h, 0xB0090E13, 0xB0060709);
+        drawRect(x, y, x + w, y + 1, COLOR_OUTLINE_HARD);
+        drawRect(x, y + h - 1, x + w, y + h, COLOR_OUTLINE_HARD);
+        drawRect(x, y, x + 1, y + h, COLOR_OUTLINE_HARD);
+        drawRect(x + w - 1, y, x + w, y + h, COLOR_OUTLINE_HARD);
+    }
+
+    private void drawTextFieldChrome(int x, int y, int w, int h, boolean focused) {
+        int glow = focused ? 0x2C67F3A4 : 0x12000000;
+        drawGradientRect(x, y, x + w, y + h, 0xCC0B1016, 0xCC07090C);
+        drawRect(x, y, x + w, y + 1, focused ? COLOR_ACCENT : COLOR_OUTLINE_HARD);
+        drawRect(x, y + h - 1, x + w, y + h, COLOR_OUTLINE_HARD);
+        drawRect(x, y, x + 1, y + h, COLOR_OUTLINE_HARD);
+        drawRect(x + w - 1, y, x + w, y + h, COLOR_OUTLINE_HARD);
+        if (glow != 0) {
+            drawRect(x - 1, y - 1, x + w + 1, y, glow);
+            drawRect(x - 1, y + h, x + w + 1, y + h + 1, glow);
+        }
+    }
+
+    private void drawLine(int x1, int y1, int x2, int y2, int thickness, int color) {
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        GlStateManager.disableAlpha();
+        GlStateManager.glLineWidth(Math.max(1, thickness));
+        net.minecraft.client.renderer.Tessellator tessellator = net.minecraft.client.renderer.Tessellator.getInstance();
+        net.minecraft.client.renderer.BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(1, net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_COLOR);
+        buffer.pos(x1, y1, 0.0D).color((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F, (color & 255) / 255.0F,
+                (color >> 24 & 255) / 255.0F).endVertex();
+        buffer.pos(x2, y2, 0.0D).color((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F, (color & 255) / 255.0F,
+                (color >> 24 & 255) / 255.0F).endVertex();
+        tessellator.draw();
+        GlStateManager.enableAlpha();
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
     }
 
     private class RuleListSlot extends GuiSlot {
@@ -320,9 +403,10 @@ public class PickupFilterConfigScreen extends GuiScreen {
         private final int w;
 
         RuleListSlot(int x, int y, int width, int height) {
-            super(PickupFilterConfigScreen.this.mc, width, height, y, y + height, 12);
+            super(PickupFilterConfigScreen.this.mc, width, height, y, y + height, 14);
             this.x = x;
             this.w = width;
+            setSlotXBoundsFromLeft(x);
         }
 
         @Override
@@ -345,10 +429,32 @@ public class PickupFilterConfigScreen extends GuiScreen {
         }
 
         @Override
+        protected void drawSelectionBox(int insideLeft, int insideTop, int mouseXIn, int mouseYIn, float partialTicks) {
+        }
+
+        @Override
+        protected void overlayBackground(int startY, int endY, int startAlpha, int endAlpha) {
+        }
+
+        @Override
         protected void drawSlot(int entryId, int insideLeft, int yPos, int insideSlotHeight, int mouseXIn, int mouseYIn, float partialTicks) {
             List<FilterRule> rules = editor.getRules();
             if (entryId < 0 || entryId >= rules.size()) {
                 return;
+            }
+
+            int contentRight = x + w - 10;
+            boolean hovered = mouseXIn >= x && mouseXIn <= contentRight && mouseYIn >= yPos && mouseYIn <= (yPos + insideSlotHeight);
+            boolean selected = isSelected(entryId);
+
+            int rowBg = (entryId % 2 == 0) ? 0x12000000 : 0x1A000000;
+            drawRect(x + 2, yPos - 1, contentRight, yPos + insideSlotHeight - 1, rowBg);
+            if (hovered && !selected) {
+                drawRect(x + 2, yPos - 1, contentRight, yPos + insideSlotHeight - 1, 0x1400E5FF);
+            }
+            if (selected) {
+                drawRect(x + 2, yPos - 1, contentRight, yPos + insideSlotHeight - 1, 0x2267F3A4);
+                drawRect(x + 2, yPos - 1, x + 4, yPos + insideSlotHeight - 1, COLOR_ACCENT);
             }
 
             FilterRule rule = rules.get(entryId);
@@ -359,8 +465,12 @@ public class PickupFilterConfigScreen extends GuiScreen {
                 int available = Math.max(0, maxWidth - fontRenderer.getStringWidth(ellipsis));
                 text = fontRenderer.trimStringToWidth(text, available) + ellipsis;
             }
-            int color = isSelected(entryId) ? COLOR_ACCENT : COLOR_TEXT;
-            fontRenderer.drawString(text, x + 6, yPos + 2, color);
+            int color = selected ? COLOR_ACCENT : COLOR_TEXT;
+            if (selected || hovered) {
+                fontRenderer.drawStringWithShadow(text, x + 8, yPos + 3, color);
+            } else {
+                fontRenderer.drawString(text, x + 8, yPos + 3, color);
+            }
         }
 
         @Override
@@ -371,6 +481,125 @@ public class PickupFilterConfigScreen extends GuiScreen {
         @Override
         protected int getScrollBarX() {
             return x + w - 6;
+        }
+
+        @Override
+        public void drawScreen(int mouseXIn, int mouseYIn, float partialTicks) {
+            super.drawScreen(mouseXIn, mouseYIn, partialTicks);
+            drawScrollbar();
+        }
+
+        private void drawScrollbar() {
+            int barW = 6;
+            int barX1 = getScrollBarX();
+            int barX2 = barX1 + barW;
+            int barY1 = this.top;
+            int barY2 = this.bottom;
+
+            drawRect(barX1, barY1, barX2, barY2, 0x26000000);
+            drawRect(barX1, barY1, barX2, barY1 + 1, COLOR_OUTLINE_HARD);
+            drawRect(barX1, barY2 - 1, barX2, barY2, COLOR_OUTLINE_HARD);
+
+            int contentHeight = getSize() * this.slotHeight;
+            int viewHeight = this.bottom - this.top;
+            int maxScroll = Math.max(0, contentHeight - viewHeight);
+            if (maxScroll <= 0) {
+                return;
+            }
+
+            int thumbH = Math.max(18, (viewHeight * viewHeight) / contentHeight);
+            thumbH = Math.min(viewHeight - 8, thumbH);
+            int thumbY = (int) (this.amountScrolled * (viewHeight - thumbH) / (float) maxScroll) + barY1;
+            thumbY = Math.max(barY1, Math.min(barY2 - thumbH, thumbY));
+
+            drawGradientRect(barX1, thumbY, barX2, thumbY + thumbH, 0xCC141B23, 0xCC0F141A);
+            drawRect(barX1, thumbY, barX2, thumbY + 1, 0x7A67F3A4);
+        }
+    }
+
+    private static class NeonButton extends GuiButton {
+        private int baseBg = 0xCC0E1319;
+        private int baseBg2 = 0xCC090B0E;
+        private int border = COLOR_OUTLINE_HARD;
+        private int text = COLOR_TEXT;
+        private int hoverGlow = 0x1E00E5FF;
+        private boolean isAccent;
+        private boolean isDanger;
+        private boolean isSubtle;
+
+        NeonButton(int buttonId, int x, int y, int widthIn, int heightIn, String buttonText) {
+            super(buttonId, x, y, widthIn, heightIn, buttonText);
+        }
+
+        NeonButton accent() {
+            isAccent = true;
+            return this;
+        }
+
+        NeonButton danger() {
+            isDanger = true;
+            return this;
+        }
+
+        NeonButton subtle() {
+            isSubtle = true;
+            return this;
+        }
+
+        @Override
+        public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks) {
+            if (!this.visible) {
+                return;
+            }
+
+            this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+            int bg1 = baseBg;
+            int bg2 = baseBg2;
+            int top = border;
+            int t = text;
+
+            if (isSubtle) {
+                bg1 = 0xB30B1016;
+                bg2 = 0xB307090C;
+                top = COLOR_OUTLINE_HARD;
+                t = COLOR_TEXT_SOFT;
+            }
+
+            if (!this.enabled) {
+                bg1 = 0x80101214;
+                bg2 = 0x800A0C0F;
+                top = 0x80242C35;
+                t = 0xFF6D7884;
+            }
+
+            if (isDanger) {
+                top = 0xFFE05C5C;
+            } else if (isAccent) {
+                top = COLOR_ACCENT;
+            }
+
+            drawGradientRect(this.x, this.y, this.x + this.width, this.y + this.height, bg1, bg2);
+            drawRect(this.x, this.y, this.x + this.width, this.y + 1, top);
+            drawRect(this.x, this.y + this.height - 1, this.x + this.width, this.y + this.height, COLOR_OUTLINE_SOFT);
+            drawRect(this.x, this.y, this.x + 1, this.y + this.height, COLOR_OUTLINE_SOFT);
+            drawRect(this.x + this.width - 1, this.y, this.x + this.width, this.y + this.height, COLOR_OUTLINE_SOFT);
+
+            if (this.hovered && this.enabled) {
+                drawRect(this.x - 1, this.y - 1, this.x + this.width + 1, this.y, hoverGlow);
+                drawRect(this.x - 1, this.y + this.height, this.x + this.width + 1, this.y + this.height + 1, hoverGlow);
+            }
+
+            int strWidth = mc.fontRenderer.getStringWidth(this.displayString);
+            int maxW = Math.max(0, this.width - 10);
+            String s = this.displayString;
+            if (strWidth > maxW) {
+                s = mc.fontRenderer.trimStringToWidth(s, maxW - mc.fontRenderer.getStringWidth("…")) + "…";
+            }
+            if (this.hovered && this.enabled) {
+                mc.fontRenderer.drawStringWithShadow(s, this.x + (this.width - mc.fontRenderer.getStringWidth(s)) / 2, this.y + (this.height - 8) / 2, t);
+            } else {
+                mc.fontRenderer.drawString(s, this.x + (this.width - mc.fontRenderer.getStringWidth(s)) / 2, this.y + (this.height - 8) / 2, t);
+            }
         }
     }
 
