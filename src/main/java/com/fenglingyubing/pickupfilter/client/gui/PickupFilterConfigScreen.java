@@ -51,6 +51,13 @@ public class PickupFilterConfigScreen extends GuiScreen {
     private String status = TextFormatting.DARK_GRAY + "同步中…";
     private int lastSnapshotRevision = -1;
 
+    private static final int LIST_MIN_HEIGHT = 30;
+    private static final int LIST_RESERVED_BELOW = 190;
+
+    private static int computeListHeight(int panelHeight) {
+        return Math.max(LIST_MIN_HEIGHT, panelHeight - LIST_RESERVED_BELOW);
+    }
+
     @Override
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
@@ -63,7 +70,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
         int listX = panelX + 14;
         int listY = panelY + 84;
         int listWidth = panelWidth - 28;
-        int listHeight = panelHeight - 162;
+        int listHeight = computeListHeight(panelHeight);
         listSlot = new RuleListSlot(listX, listY, listWidth, listHeight);
 
         ruleInput = new GuiTextField(10, fontRenderer, listX, panelY + panelHeight - 70, listWidth, 18);
@@ -299,7 +306,7 @@ public class PickupFilterConfigScreen extends GuiScreen {
         int listX = panelX + 14;
         int listY = panelY + 84;
         int listWidth = panelWidth - 28;
-        int listHeight = panelHeight - 162;
+        int listHeight = computeListHeight(panelHeight);
         drawInsetPanel(listX, listY, listWidth, listHeight);
         drawString(fontRenderer, TextFormatting.DARK_GRAY + "规则列表（" + editor.getRules().size() + "）", listX + 2, panelY + 76, COLOR_MUTED);
 
@@ -320,8 +327,27 @@ public class PickupFilterConfigScreen extends GuiScreen {
         }
 
         int panelBottom = panelY + panelHeight;
-        drawString(fontRenderer, status == null ? "" : status, listX, panelBottom - 86, COLOR_TEXT_SOFT);
-        drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：添加/删除会自动保存；“应用”仅作手动同步", listX, panelBottom - 98, COLOR_MUTED);
+        int inputY = panelBottom - 70;
+        int listBottom = listY + listHeight;
+        int gapToInput = inputY - listBottom;
+
+        int statusY;
+        int tipY = Integer.MIN_VALUE;
+        if (gapToInput >= 28) {
+            tipY = Math.max(panelBottom - 98, listBottom + 6);
+            statusY = tipY + 12;
+            if (statusY > inputY - 14) {
+                tipY = Integer.MIN_VALUE;
+                statusY = Math.max(panelBottom - 86, listBottom + 6);
+            }
+        } else {
+            statusY = Math.max(panelBottom - 86, listBottom + 6);
+        }
+
+        drawString(fontRenderer, status == null ? "" : status, listX, statusY, COLOR_TEXT_SOFT);
+        if (tipY != Integer.MIN_VALUE) {
+            drawString(fontRenderer, TextFormatting.DARK_GRAY + "提示：添加/删除会自动保存；“应用”仅作手动同步", listX, tipY, COLOR_MUTED);
+        }
 
         GlStateManager.disableLighting();
         super.drawScreen(mouseX, mouseY, partialTicks);

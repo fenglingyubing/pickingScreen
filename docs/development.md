@@ -98,6 +98,8 @@
 - 清除范围：可在 `P` 打开的配置界面点击 `清除范围：...` 调整（写入 `config/pickupfilter-common.properties` 的 `clear_drops.chunk_radius`）。
 - 风格：`PickupFilterMatcherScreen` 采用**原版容器 GUI 的经典灰色配色**（使用 `textures/gui/container/generic_54.png` 的布局/槽位风格），并保持“上方匹配列表 + 下方背包”的 9×3 / 9×(3+热键栏) 格子结构；重新打开时会从服务端快照加载并显示当前已保存的物品规则（拾取/销毁两份列表各自独立显示）。
 - 风格：`PickupFilterConfigScreen` 采用**暗色霓虹/玻璃面板**风格（深色渐变底 + 绿色主强调色），并对 `GuiSlot` 列表绘制了自定义行高/悬停/选中态与滚动条；如需保持一致性，优先复用其配色常量与 `NeonButton` 的绘制方式。
+- 布局：`PickupFilterConfigScreen` 的“规则列表”高度会为底部的 `提示/状态/输入框/按钮` 预留空间，避免列表内容与文本/输入控件重叠；如新增/调整底部文案或控件，记得同步调整 `computeListHeight(...)` 的预留量与绘制位置。
+- 自测：GUI scale 调高（有效分辨率变小）时，重点检查“规则列表”的裁剪/滚动与底部控件是否有重叠或越界。
 - 注意：不要空实现 `GuiSlot#drawSelectionBox(...)` —— 该方法内部负责迭代并调用 `drawSlot(...)` 绘制每一行，空实现会导致“列表有数据但不显示”。如需自定义选中框/背景，优先在 `drawSlot(...)` 内绘制，或在重写时调用 `super.drawSelectionBox(...)`。
 - 保存策略：匹配界面添加/移除会**自动保存**；配置界面添加/删除也会自动保存（“存/应用”按钮仅作为手动同步兜底）。
 - 匹配界面：
