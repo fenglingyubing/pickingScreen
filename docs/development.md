@@ -98,6 +98,7 @@
 - 清除范围：可在 `P` 打开的配置界面点击 `清除范围：...` 调整（写入 `config/pickupfilter-common.properties` 的 `clear_drops.chunk_radius`）。
 - 风格：`PickupFilterMatcherScreen` 采用**原版容器 GUI 的经典灰色配色**（使用 `textures/gui/container/generic_54.png` 的布局/槽位风格），并保持“上方匹配列表 + 下方背包”的 9×3 / 9×(3+热键栏) 格子结构；重新打开时会从服务端快照加载并显示当前已保存的物品规则（拾取/销毁两份列表各自独立显示）。
 - 风格：`PickupFilterConfigScreen` 采用**暗色霓虹/玻璃面板**风格（深色渐变底 + 绿色主强调色），并对 `GuiSlot` 列表绘制了自定义行高/悬停/选中态与滚动条；如需保持一致性，优先复用其配色常量与 `NeonButton` 的绘制方式。
+- 注意：不要空实现 `GuiSlot#drawSelectionBox(...)` —— 该方法内部负责迭代并调用 `drawSlot(...)` 绘制每一行，空实现会导致“列表有数据但不显示”。如需自定义选中框/背景，优先在 `drawSlot(...)` 内绘制，或在重写时调用 `super.drawSelectionBox(...)`。
 - 保存策略：匹配界面添加/移除会**自动保存**；配置界面添加/删除也会自动保存（“存/应用”按钮仅作为手动同步兜底）。
 - 匹配界面：
   - 规则生成：对工具/护甲等**可损坏物品**（耐久度会变化），从背包添加到列表时会自动将 metadata 归一为 `*`（忽略耐久度），避免“同物品因耐久/属性不同而无法拾取/销毁”或出现重复条目。
@@ -186,3 +187,8 @@
 
 - `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 27s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示；编译期出现 deprecated API 提示）
 - `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 19s`（同上警告）
+
+## 验证记录（任务 15）
+
+- `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 21s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示）
+- `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 20s`（同上警告）

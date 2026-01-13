@@ -429,10 +429,6 @@ public class PickupFilterConfigScreen extends GuiScreen {
         }
 
         @Override
-        protected void drawSelectionBox(int insideLeft, int insideTop, int mouseXIn, int mouseYIn, float partialTicks) {
-        }
-
-        @Override
         protected void overlayBackground(int startY, int endY, int startAlpha, int endAlpha) {
         }
 
