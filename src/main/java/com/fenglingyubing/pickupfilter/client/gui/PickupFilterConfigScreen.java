@@ -14,11 +14,13 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.util.List;
@@ -56,6 +58,24 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
     private static int computeListHeight(int panelHeight) {
         return Math.max(LIST_MIN_HEIGHT, panelHeight - LIST_RESERVED_BELOW);
+    }
+
+    private void enableScissor(int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        ScaledResolution scaledResolution = new ScaledResolution(mc);
+        int scale = Math.max(1, scaledResolution.getScaleFactor());
+        int scissorX = x * scale;
+        int scissorY = (this.height - (y + h)) * scale;
+        int scissorW = w * scale;
+        int scissorH = h * scale;
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(scissorX, scissorY, scissorW, scissorH);
+    }
+
+    private void disableScissor() {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     @Override
@@ -507,8 +527,19 @@ public class PickupFilterConfigScreen extends GuiScreen {
 
         @Override
         public void drawScreen(int mouseXIn, int mouseYIn, float partialTicks) {
+            int clipX = x;
+            int clipY = this.top;
+            int clipW = w;
+            int clipH = this.bottom - this.top;
+            boolean clipped = clipW > 0 && clipH > 0;
+            if (clipped) {
+                enableScissor(clipX, clipY, clipW, clipH);
+            }
             super.drawScreen(mouseXIn, mouseYIn, partialTicks);
             drawScrollbar();
+            if (clipped) {
+                disableScissor();
+            }
         }
 
         private void drawScrollbar() {
