@@ -92,6 +92,7 @@
   - 规则生成：对工具/护甲等**可损坏物品**（耐久度会变化），从背包添加到列表时会自动将 metadata 归一为 `*`（忽略耐久度），避免“同物品因耐久/属性不同而无法拾取/销毁”或出现重复条目。
   - 悬停提示：列表/背包中的物品 tooltip 在界面最上层渲染，避免被格子/按钮遮挡。
   - 顶部按钮栏：`拾取列表 / 销毁列表` 与分页 `< / >` 同行显示，tab 宽度按面板宽度动态计算，保证不与分页按钮重叠。
+    - 如需手工微调顶部按钮位置/间距：改 `PickupFilterMatcherScreen` 的 `MATCHER_TAB_Y_OFFSET / MATCHER_TAB_X_MARGIN / MATCHER_TABS_GAP / MATCHER_TABS_TO_PAGER_GAP / MATCHER_PAGER_BTN_W` 常量（入口在 `initGui()` 里创建 tab/pager 按钮）。
   - `拾取列表 / 销毁列表`：切换正在编辑的匹配列表（不需要先切换模式即可分别维护两份列表）
   - `同步到服务器`：手动同步当前列表（一般不需要）
   - `清空列表`：清空当前列表的“物品条目”（保留未在此界面展示的高级规则）
@@ -162,4 +163,9 @@
 ## 验证记录（任务 12）
 
 - `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 29s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示）
+- `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 19s`（同上警告）
+
+## 验证记录（任务 13）
+
+- `./gradlew test --no-daemon --console=plain`：`BUILD SUCCESSFUL in 24s`（含 `stable_39` 映射提示、ForgeGradle 2.3.4 不受支持警告与 Gradle 5 兼容性废弃特性提示）
 - `./gradlew build --no-daemon --console=plain`：`BUILD SUCCESSFUL in 19s`（同上警告）

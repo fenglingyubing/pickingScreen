@@ -43,6 +43,16 @@ public class PickupFilterMatcherScreen extends GuiScreen {
     private static final int GUI_TEXT = 0x404040;
     private static final int GUI_TEXT_MUTED = 0x606060;
 
+    // Top bar (tabs + pager): tweak these to adjust positions/spacings.
+    private static final int MATCHER_TAB_H = 20;
+    private static final int MATCHER_TAB_Y_OFFSET = 24;
+    private static final int MATCHER_TAB_Y_MIN = 4;
+    private static final int MATCHER_TAB_X_MARGIN = 8;
+    private static final int MATCHER_TABS_GAP = 4;
+    private static final int MATCHER_TABS_TO_PAGER_GAP = 4;
+    private static final int MATCHER_PAGER_BTN_W = 20;
+    private static final int MATCHER_PAGER_BTN_H = 20;
+
     private final GuiScreen parent;
 
     private GuiButton tabPickupButton;
@@ -110,19 +120,17 @@ public class PickupFilterMatcherScreen extends GuiScreen {
         invY = invLabelY + 11;
         hotbarY = invY + INV_MAIN_ROWS * SLOT + 4;
 
-        int tabY = Math.max(4, panelY - 24);
-        int tabX = panelX + 8;
-        int tabsGap = 4;
-        int tabsToPagerGap = 4;
-        int pagerBlockW = 20 * 2;
-        int tabsAvailableW = panelW - 8 - pagerBlockW - tabsToPagerGap;
-        int tabW = (tabsAvailableW - tabsGap) / 2;
-        tabPickupButton = addButton(new GuiButton(21, tabX, tabY, tabW, 20, "拾取列表"));
-        tabDestroyButton = addButton(new GuiButton(22, tabX + tabW + tabsGap, tabY, tabW, 20, "销毁列表"));
+        int tabY = Math.max(MATCHER_TAB_Y_MIN, panelY - MATCHER_TAB_Y_OFFSET);
+        int tabX = panelX + MATCHER_TAB_X_MARGIN;
+        int pagerBlockW = MATCHER_PAGER_BTN_W * 2;
+        int tabsAvailableW = panelW - MATCHER_TAB_X_MARGIN - pagerBlockW - MATCHER_TABS_TO_PAGER_GAP;
+        int tabW = (tabsAvailableW - MATCHER_TABS_GAP) / 2;
+        tabPickupButton = addButton(new GuiButton(21, tabX, tabY, tabW, MATCHER_TAB_H, "拾取列表"));
+        tabDestroyButton = addButton(new GuiButton(22, tabX + tabW + MATCHER_TABS_GAP, tabY, tabW, MATCHER_TAB_H, "销毁列表"));
 
         int pagerY = tabY;
-        nextPageButton = addButton(new GuiButton(24, panelX + panelW - 20, pagerY, 20, 20, ">"));
-        prevPageButton = addButton(new GuiButton(23, panelX + panelW - 40, pagerY, 20, 20, "<"));
+        nextPageButton = addButton(new GuiButton(24, panelX + panelW - MATCHER_PAGER_BTN_W, pagerY, MATCHER_PAGER_BTN_W, MATCHER_PAGER_BTN_H, ">"));
+        prevPageButton = addButton(new GuiButton(23, panelX + panelW - MATCHER_PAGER_BTN_W * 2, pagerY, MATCHER_PAGER_BTN_W, MATCHER_PAGER_BTN_H, "<"));
 
         int actionsY = panelY + panelH + 10;
         int gap = 6;
