@@ -76,7 +76,7 @@ public class PickupFilterIntroScreen extends GuiScreen {
         int line = 0;
 
         drawString(fontRenderer, TextFormatting.GRAY + "1) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.TOGGLE_MODE_KEY) + TextFormatting.RESET + " 切换模式", left, top + line++ * 12, 0xFFE7EEF5);
-        drawString(fontRenderer, TextFormatting.GRAY + "2) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.CLEAR_DROPS_KEY) + TextFormatting.RESET + " 清除附近掉落物", left, top + line++ * 12, 0xFFE7EEF5);
+        drawString(fontRenderer, TextFormatting.GRAY + "2) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.CLEAR_DROPS_KEY) + TextFormatting.RESET + " 清除附近掉落物/地上箭矢", left, top + line++ * 12, 0xFFE7EEF5);
         drawString(fontRenderer, TextFormatting.GRAY + "3) " + TextFormatting.RESET + "按 " + TextFormatting.AQUA + keyName(KeyBindingManager.OPEN_CONFIG_KEY) + TextFormatting.RESET + " 打开配置界面，添加/删除过滤规则", left, top + line++ * 12, 0xFFE7EEF5);
 
         line++;

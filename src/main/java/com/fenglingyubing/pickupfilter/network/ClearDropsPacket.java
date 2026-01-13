@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.network;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import com.fenglingyubing.pickupfilter.event.DropClearArea;
 import com.fenglingyubing.pickupfilter.event.DropClearLogic;
 import io.netty.buffer.ByteBuf;
@@ -39,7 +40,8 @@ public class ClearDropsPacket implements IMessage {
                     return;
                 }
 
-                AxisAlignedBB scanBox = DropClearArea.chunkRadiusArea(player, DropClearArea.DEFAULT_CHUNK_RADIUS);
+                int chunkRadius = PickupFilterCommon.getCommonSettings().getClearDropsChunkRadius();
+                AxisAlignedBB scanBox = DropClearArea.chunkRadiusArea(player, chunkRadius);
                 List<EntityItem> drops = player.world.getEntitiesWithinAABB(EntityItem.class, scanBox);
                 DropClearLogic.clearAll(drops, drop -> drop.isDead, EntityItem::setDead);
 
