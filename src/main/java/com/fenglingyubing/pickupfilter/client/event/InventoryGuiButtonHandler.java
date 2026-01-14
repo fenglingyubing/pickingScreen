@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -218,6 +219,9 @@ public class InventoryGuiButtonHandler {
             return;
         }
 
+        int mouseX = event.getMouseX();
+        int mouseY = event.getMouseY();
+
         int xSize = 176;
         int ySize = 166;
         if (gui instanceof GuiContainer) {
@@ -237,15 +241,13 @@ public class InventoryGuiButtonHandler {
 
         int boxW = 110;
         int boxH = 28;
-        int x;
-        int y;
-        if (guiLeft + xSize + 6 + boxW <= gui.width - 4) {
-            x = guiLeft + xSize + 6;
-            y = guiTop + 30;
-        } else {
-            x = guiLeft + 6;
-            y = guiTop + ySize + 6;
+        int[] tooltipRect = getTooltipRect(gui, mouseX, mouseY, getHoveredStack(gui));
+        int[] pos = findOverlayPosition(gui, guiLeft, guiTop, xSize, ySize, boxW, boxH, tooltipRect);
+        if (pos == null || pos.length != 2) {
+            return;
         }
+        int x = pos[0];
+        int y = pos[1];
 
         int bg = 0x88000000;
         gui.drawRect(x, y, x + boxW, y + boxH, bg);
@@ -254,6 +256,95 @@ public class InventoryGuiButtonHandler {
                 + TextFormatting.DARK_GRAY + " / 销毁" + TextFormatting.GRAY + destroyCount;
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line1, x + 4, y + 4, 0xFFFFFF);
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(line2, x + 4, y + 4 + 12, 0xFFFFFF);
+    }
+
+    private static int[] getTooltipRect(GuiScreen gui, int mouseX, int mouseY, ItemStack hoveredStack) {
+        if (gui == null || hoveredStack == null || hoveredStack.isEmpty()) {
+            return null;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.player == null || mc.fontRenderer == null || mc.gameSettings == null) {
+            return null;
+        }
+        ITooltipFlag flag = mc.gameSettings.advancedItemTooltips ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL;
+        List<String> lines = hoveredStack.getTooltip(mc.player, flag);
+        if (lines == null || lines.isEmpty()) {
+            return null;
+        }
+
+        int maxWidth = 0;
+        for (String line : lines) {
+            if (line == null) {
+                continue;
+            }
+            maxWidth = Math.max(maxWidth, mc.fontRenderer.getStringWidth(line));
+        }
+
+        int height = lines.size() == 1 ? 8 : 8 + (lines.size() - 1) * 10;
+        int x = mouseX + 12;
+        int y = mouseY - 12;
+        if (x + maxWidth > gui.width) {
+            x = mouseX - 28 - maxWidth;
+        }
+        if (y + height + 6 > gui.height) {
+            y = gui.height - height - 6;
+        }
+        if (y < 4) {
+            y = 4;
+        }
+
+        int padL = 4;
+        int padT = 6;
+        int padR = 4;
+        int padB = 6;
+        return new int[]{x - padL, y - padT, maxWidth + padL + padR, height + padT + padB};
+    }
+
+    private static int[] findOverlayPosition(
+            GuiScreen gui,
+            int guiLeft,
+            int guiTop,
+            int xSize,
+            int ySize,
+            int boxW,
+            int boxH,
+            int[] tooltipRect
+    ) {
+        if (gui == null) {
+            return null;
+        }
+
+        int[][] candidates = new int[][]{
+                // Prefer outside: right side, then bottom.
+                new int[]{guiLeft + xSize + 6, guiTop + 30},
+                new int[]{guiLeft + 6, guiTop + ySize + 6},
+                // Alternate outside: left side / above.
+                new int[]{guiLeft - 6 - boxW, guiTop + 30},
+                new int[]{guiLeft + 6, guiTop - 6 - boxH},
+                // Fallback: inside corners.
+                new int[]{guiLeft + 6, guiTop + 6},
+                new int[]{guiLeft + xSize - boxW - 6, guiTop + 6},
+                new int[]{guiLeft + 6, guiTop + ySize - boxH - 6},
+                new int[]{guiLeft + xSize - boxW - 6, guiTop + ySize - boxH - 6},
+        };
+
+        for (int[] candidate : candidates) {
+            if (candidate == null || candidate.length != 2) {
+                continue;
+            }
+            int x = clamp(candidate[0], 4, gui.width - boxW - 4);
+            int y = clamp(candidate[1], 4, gui.height - boxH - 4);
+            if (tooltipRect != null && tooltipRect.length == 4 && rectIntersects(x, y, boxW, boxH, tooltipRect[0], tooltipRect[1], tooltipRect[2], tooltipRect[3])) {
+                continue;
+            }
+            return new int[]{x, y};
+        }
+
+        return tooltipRect == null ? new int[]{clamp(guiLeft + xSize + 6, 4, gui.width - boxW - 4), clamp(guiTop + 30, 4, gui.height - boxH - 4)} : null;
+    }
+
+    private static boolean rectIntersects(int ax, int ay, int aw, int ah, int bx, int by, int bw, int bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
     }
 
     private static String getModeNameChinese(FilterMode mode) {

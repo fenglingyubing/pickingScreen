@@ -18,4 +18,4 @@
 - 打包发布 Jar：`./gradlew reobfJar`（产物在 `build/libs/`）
 - 运行开发客户端：`./gradlew runClient`
 
-更多开发说明见 `docs/development.md`。
+更多开发说明见 `DEVELOPMENT.md`。
