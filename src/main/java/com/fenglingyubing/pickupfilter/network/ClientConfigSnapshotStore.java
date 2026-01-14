@@ -29,6 +29,24 @@ public final class ClientConfigSnapshotStore {
         return snapshot;
     }
 
+    public static void applyLocalRulesForMode(FilterMode mode, List<FilterRule> rulesForMode) {
+        FilterMode safeTargetMode = mode == null ? FilterMode.DISABLED : mode;
+        Snapshot current = snapshot;
+        FilterMode currentMode = current == null ? FilterMode.DISABLED : current.getMode();
+        List<FilterRule> currentPickup = current == null ? Collections.emptyList() : current.getPickupRules();
+        List<FilterRule> currentDestroy = current == null ? Collections.emptyList() : current.getDestroyRules();
+
+        List<FilterRule> safePickup = Collections.unmodifiableList(copyRules(currentPickup));
+        List<FilterRule> safeDestroy = Collections.unmodifiableList(copyRules(currentDestroy));
+        List<FilterRule> safeTargetRules = Collections.unmodifiableList(copyRules(rulesForMode));
+
+        snapshot = safeTargetMode == FilterMode.DESTROY_MATCHING
+                ? new Snapshot(currentMode, safePickup, safeTargetRules)
+                : new Snapshot(currentMode, safeTargetRules, safeDestroy);
+        HAS_SNAPSHOT.set(true);
+        REVISION.incrementAndGet();
+    }
+
     static void update(FilterMode mode, List<FilterRule> pickupRules, List<FilterRule> destroyRules) {
         FilterMode safeMode = mode == null ? FilterMode.DISABLED : mode;
         snapshot = new Snapshot(
