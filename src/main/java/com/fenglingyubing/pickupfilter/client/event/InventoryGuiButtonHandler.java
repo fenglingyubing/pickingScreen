@@ -127,7 +127,7 @@ public class InventoryGuiButtonHandler {
         if (!Keyboard.getEventKeyState() || Keyboard.isRepeatEvent()) {
             return;
         }
-        if (Keyboard.getEventKey() != Keyboard.KEY_A) {
+        if (Keyboard.getEventKey() != Keyboard.KEY_Z) {
             return;
         }
 
@@ -144,7 +144,7 @@ public class InventoryGuiButtonHandler {
 
         if (!ClientConfigSnapshotStore.hasReceivedSnapshot()) {
             PickupFilterNetwork.CHANNEL.sendToServer(new RequestConfigSnapshotPacket());
-            mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "配置同步中…稍后再按 A"), true);
+            mc.player.sendStatusMessage(new TextComponentString(TextFormatting.DARK_GRAY + "配置同步中…稍后再按 Z"), true);
             return;
         }
 
@@ -187,7 +187,7 @@ public class InventoryGuiButtonHandler {
                 + TextFormatting.AQUA + registryName.getPath()
                 + TextFormatting.DARK_GRAY + " @"
                 + TextFormatting.AQUA + metaText
-                + TextFormatting.DARK_GRAY + "（A 快捷）"), true);
+                + TextFormatting.DARK_GRAY + "（Z 快捷）"), true);
     }
 
     private static boolean containsEquivalentRule(List<FilterRule> rules, FilterRule candidate, ItemStack stack) {

@@ -54,7 +54,7 @@
 - 对客户端/输入相关逻辑（如按键绑定）：优先用小型适配器接口隔离 Forge 的静态注册点（例如 `KeyBindingRegistrar`），在单元测试中用 fake 实现验证注册与按键触发逻辑，避免依赖启动 Minecraft 客户端。
 - 对 GUI：避免在单元测试中直接实例化 `GuiScreen` / `GuiSlot`，优先将“规则编辑/选择/校验”等行为收敛到纯 Java 模型（例如 `FilterRulesEditor`），并用单元测试覆盖；运行期再由 GUI 类做渲染与输入绑定。
 - 对“客户端触发、服务端执行”的输入功能（例如按键触发清除周围掉落物）：客户端只负责发包；服务端在主线程执行世界查询/实体移除，并通过聊天消息回传结果，避免客户端直接改世界状态导致不同步。
-- 对“背包界面快捷添加规则（`A`）”：`GuiContainer` 的“鼠标悬停 Slot”字段在 dev/发布环境命名不同，使用 `ReflectionHelper.findField(...)` 同时兼容 MCP/SRG；发 `UpdateConfigPacket` 后服务端会回传 `ConfigSnapshotPacket`，客户端可先用 `ClientConfigSnapshotStore.applyLocalRulesForMode(...)` 做乐观更新（用于即时刷新 UI），并避免额外 `RequestConfigSnapshotPacket` 造成旧快照覆盖新状态的竞态。
+- 对“背包界面快捷添加规则（`Z`）”：`GuiContainer` 的“鼠标悬停 Slot”字段在 dev/发布环境命名不同，使用 `ReflectionHelper.findField(...)` 同时兼容 MCP/SRG；发 `UpdateConfigPacket` 后服务端会回传 `ConfigSnapshotPacket`，客户端可先用 `ClientConfigSnapshotStore.applyLocalRulesForMode(...)` 做乐观更新（用于即时刷新 UI），并避免额外 `RequestConfigSnapshotPacket` 造成旧快照覆盖新状态的竞态。
 
 ## 目录结构
 
@@ -114,11 +114,11 @@
   - `清空列表`：清空当前列表的“物品条目”（保留未在此界面展示的高级规则）
   - `打开配置`：打开配置界面
   - `返回背包`：返回背包
-- 快捷键：背包界面鼠标悬停在物品图标上按 `A`，可直接把该物品合并进规则并同步（依赖客户端已拿到一次配置快照，否则会先发起同步请求）。
+- 快捷键：背包界面鼠标悬停在物品图标上按 `Z`，可直接把该物品合并进规则并同步（依赖客户端已拿到一次配置快照，否则会先发起同步请求）。
 - 手工验证建议：
   - 启动开发客户端：`./gradlew runClient`
   - 进入世界 → 打开背包 → 点击 “筛” → 切换到“拾取列表”/“销毁列表” → 选择若干物品 → 关闭并重新打开确认条目可见
-  - 进入世界 → 打开背包 → 鼠标悬停物品 → 按 `A` → 再按 `P` 打开配置确认规则已追加并去重
+  - 进入世界 → 打开背包 → 鼠标悬停物品 → 按 `Z` → 再按 `P` 打开配置确认规则已追加并去重
   - 进入世界 → 按 `O` 切换模式 → 屏幕上方提示栏（actionbar）会提示当前模式名称（也可用 `P` 打开配置界面确认当前模式）
   - 进入世界 →（可选）修改 `config/pickupfilter-common.properties` 的 `clear_drops.chunk_radius` → 向地上射几支箭 → 按 `K` 清除附近掉落物/箭矢 → 确认范围符合预期且射在地上的箭矢被清除
 
