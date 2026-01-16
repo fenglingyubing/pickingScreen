@@ -50,6 +50,9 @@ public class ClearDropsPacket implements IMessage {
     public static class Handler implements IMessageHandler<ClearDropsPacket, IMessage> {
         @Override
         public IMessage onMessage(ClearDropsPacket message, MessageContext ctx) {
+            if (ctx == null || ctx.getServerHandler() == null) {
+                return null;
+            }
             EntityPlayerMP player = ctx.getServerHandler().player;
             if (player == null) {
                 return null;

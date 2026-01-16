@@ -2,8 +2,11 @@ package com.fenglingyubing.pickupfilter;
 
 import com.fenglingyubing.pickupfilter.settings.CommonSettings;
 import java.io.File;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class PickupFilterCommon {
+    public static final Logger LOGGER = LogManager.getLogger("pickupfilter");
     private static volatile CommonSettings commonSettings;
 
     private PickupFilterCommon() {
@@ -29,4 +32,3 @@ public final class PickupFilterCommon {
         return settings;
     }
 }
-

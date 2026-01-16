@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.config;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,15 +37,20 @@ public class ConfigManager {
     public synchronized void loadConfig(File configFile) {
         this.configFile = configFile;
         Properties properties = new Properties();
-        if (configFile.exists() && configFile.isFile()) {
+        boolean loadedFromDisk = false;
+        if (configFile != null && configFile.exists() && configFile.isFile()) {
             try (FileInputStream inputStream = new FileInputStream(configFile)) {
                 properties.load(inputStream);
-            } catch (Exception ignored) {
-                // fall through with defaults
+                loadedFromDisk = true;
+            } catch (Exception e) {
+                PickupFilterCommon.LOGGER.warn("Failed to load config file: {}", configFile, e);
+                return;
             }
         }
         syncFromProperties(properties);
-        saveConfig();
+        if (configFile != null && (!configFile.exists() || loadedFromDisk)) {
+            saveConfig();
+        }
     }
 
     public synchronized void saveConfig() {
@@ -54,6 +60,7 @@ public class ConfigManager {
 
         File parent = configFile.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            PickupFilterCommon.LOGGER.warn("Failed to create config directory: {}", parent);
             return;
         }
 
@@ -66,7 +73,8 @@ public class ConfigManager {
 
         try (FileOutputStream outputStream = new FileOutputStream(configFile)) {
             out.store(outputStream, "PickupFilter config");
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            PickupFilterCommon.LOGGER.warn("Failed to save config file: {}", configFile, e);
         }
     }
 
@@ -131,7 +139,8 @@ public class ConfigManager {
                 if (rule != null) {
                     filterRules.add(rule);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                PickupFilterCommon.LOGGER.warn("Failed to parse rule '{}' in config file: {}", key, configFile, e);
             }
         }
     }

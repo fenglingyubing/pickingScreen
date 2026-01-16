@@ -27,6 +27,9 @@ public class CycleModePacket implements IMessage {
     public static class Handler implements IMessageHandler<CycleModePacket, IMessage> {
         @Override
         public IMessage onMessage(CycleModePacket message, MessageContext ctx) {
+            if (ctx == null || ctx.getServerHandler() == null) {
+                return null;
+            }
             EntityPlayerMP player = ctx.getServerHandler().player;
             if (player == null) {
                 return null;

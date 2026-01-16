@@ -5,7 +5,9 @@ import com.fenglingyubing.pickupfilter.config.FilterRule;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,9 +62,10 @@ public final class ClientConfigSnapshotStore {
 
     private static List<FilterRule> copyRules(List<FilterRule> rules) {
         List<FilterRule> copied = new ArrayList<>();
+        Set<FilterRule> seen = new LinkedHashSet<>();
         if (rules != null) {
             for (FilterRule rule : rules) {
-                if (rule != null && !copied.contains(rule)) {
+                if (rule != null && seen.add(rule)) {
                     copied.add(rule);
                 }
             }

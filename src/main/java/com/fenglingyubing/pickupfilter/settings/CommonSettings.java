@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.settings;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import com.fenglingyubing.pickupfilter.event.DropClearArea;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,10 +25,14 @@ public class CommonSettings {
         }
 
         Properties properties = new Properties();
+        boolean loadedFromDisk = false;
         if (configFile.exists() && configFile.isFile()) {
             try (FileInputStream inputStream = new FileInputStream(configFile)) {
                 properties.load(inputStream);
-            } catch (Exception ignored) {
+                loadedFromDisk = true;
+            } catch (Exception e) {
+                PickupFilterCommon.LOGGER.warn("Failed to load common settings file: {}", configFile, e);
+                return;
             }
         }
 
@@ -38,7 +43,9 @@ public class CommonSettings {
                 CLEAR_DROPS_CHUNK_RADIUS_MAX
         );
 
-        save();
+        if (!configFile.exists() || loadedFromDisk) {
+            save();
+        }
     }
 
     public synchronized void save() {
@@ -48,6 +55,7 @@ public class CommonSettings {
 
         File parent = configFile.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            PickupFilterCommon.LOGGER.warn("Failed to create settings directory: {}", parent);
             return;
         }
 
@@ -55,7 +63,8 @@ public class CommonSettings {
         out.setProperty(KEY_CLEAR_DROPS_CHUNK_RADIUS, Integer.toString(clearDropsChunkRadius));
         try (FileOutputStream outputStream = new FileOutputStream(configFile)) {
             out.store(outputStream, "PickupFilter common settings");
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            PickupFilterCommon.LOGGER.warn("Failed to save common settings file: {}", configFile, e);
         }
     }
 

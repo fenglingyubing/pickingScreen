@@ -1,6 +1,7 @@
 package com.fenglingyubing.pickupfilter.event;
 
 import com.fenglingyubing.pickupfilter.config.FilterMode;
+import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -17,6 +18,7 @@ import java.util.List;
 public class CommonEventHandler {
     private final PlayerFilterConfigStore configStore;
     private static final double AUTO_DESTROY_RANGE = 1.5D;
+    private static final int AUTO_DESTROY_INTERVAL_TICKS = 5;
 
     public CommonEventHandler(PlayerFilterConfigStore configStore) {
         this.configStore = configStore;
@@ -51,6 +53,13 @@ public class CommonEventHandler {
 
         FilterMode mode = configStore.getMode(player);
         if (mode != FilterMode.DESTROY_MATCHING) {
+            return;
+        }
+        if (player.ticksExisted % AUTO_DESTROY_INTERVAL_TICKS != 0) {
+            return;
+        }
+        List<FilterRule> rulesForMode = configStore.getRulesForMode(player, mode);
+        if (rulesForMode == null || rulesForMode.isEmpty()) {
             return;
         }
 

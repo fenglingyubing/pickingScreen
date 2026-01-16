@@ -11,7 +11,9 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class UpdateConfigPacket implements IMessage {
     private String targetModeId;
@@ -36,7 +38,7 @@ public class UpdateConfigPacket implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
         targetModeId = ConfigSnapshotPacket.readString(buf, 32);
-        int size = Math.max(0, Math.min(buf.readInt(), 512));
+        int size = ConfigSnapshotPacket.readClampedInt(buf, 512);
         rules = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             rules.add(ConfigSnapshotPacket.readString(buf, 256));
@@ -45,17 +47,20 @@ public class UpdateConfigPacket implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        ConfigSnapshotPacket.writeString(buf, targetModeId == null ? FilterMode.DISABLED.getId() : targetModeId);
+        ConfigSnapshotPacket.writeString(buf, targetModeId == null ? FilterMode.DISABLED.getId() : targetModeId, 32);
         List<String> safeRules = rules == null ? new ArrayList<>() : rules;
         buf.writeInt(Math.min(safeRules.size(), 512));
         for (int i = 0; i < safeRules.size() && i < 512; i++) {
-            ConfigSnapshotPacket.writeString(buf, safeRules.get(i));
+            ConfigSnapshotPacket.writeString(buf, safeRules.get(i), 256);
         }
     }
 
     public static class Handler implements IMessageHandler<UpdateConfigPacket, IMessage> {
         @Override
         public IMessage onMessage(UpdateConfigPacket message, MessageContext ctx) {
+            if (ctx == null || ctx.getServerHandler() == null) {
+                return null;
+            }
             EntityPlayerMP player = ctx.getServerHandler().player;
             if (player == null) {
                 return null;
@@ -71,10 +76,11 @@ public class UpdateConfigPacket implements IMessage {
                 }
 
                 List<FilterRule> parsed = new ArrayList<>();
+                Set<FilterRule> seen = new LinkedHashSet<>();
                 if (message.rules != null) {
                     for (String serialized : message.rules) {
                         FilterRule rule = FilterRule.deserialize(serialized);
-                        if (rule != null && !parsed.contains(rule)) {
+                        if (rule != null && seen.add(rule)) {
                             parsed.add(rule);
                         }
                     }

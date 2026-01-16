@@ -26,6 +26,9 @@ public class RequestConfigSnapshotPacket implements IMessage {
     public static class Handler implements IMessageHandler<RequestConfigSnapshotPacket, IMessage> {
         @Override
         public IMessage onMessage(RequestConfigSnapshotPacket message, MessageContext ctx) {
+            if (ctx == null || ctx.getServerHandler() == null) {
+                return null;
+            }
             EntityPlayerMP player = ctx.getServerHandler().player;
             if (player == null) {
                 return null;

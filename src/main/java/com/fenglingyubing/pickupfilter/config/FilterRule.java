@@ -143,7 +143,11 @@ public final class FilterRule {
             int metadata = ANY_METADATA;
             String metaRaw = atSplit[1].trim();
             if (!metaRaw.isEmpty() && !ANY.equals(metaRaw)) {
-                metadata = Integer.parseInt(metaRaw);
+                try {
+                    metadata = Integer.parseInt(metaRaw);
+                } catch (Exception ignored) {
+                    return null;
+                }
             }
             return new FilterRule(base.modId, base.itemName, metadata, base.useWildcard);
         }
@@ -165,7 +169,11 @@ public final class FilterRule {
             int metadata = ANY_METADATA;
             String metadataRaw = parts[2].trim();
             if (!metadataRaw.isEmpty() && !ANY.equals(metadataRaw)) {
-                metadata = Integer.parseInt(metadataRaw);
+                try {
+                    metadata = Integer.parseInt(metadataRaw);
+                } catch (Exception ignored) {
+                    return null;
+                }
             }
 
             boolean useWildcard = itemName != null && itemName.contains(ANY);

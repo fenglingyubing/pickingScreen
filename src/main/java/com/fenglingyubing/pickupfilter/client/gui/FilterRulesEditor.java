@@ -3,7 +3,9 @@ package com.fenglingyubing.pickupfilter.client.gui;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FilterRulesEditor {
     private final List<FilterRule> rules = new ArrayList<>();
@@ -11,13 +13,15 @@ public class FilterRulesEditor {
 
     public synchronized void replaceAll(List<FilterRule> newRules) {
         rules.clear();
+        Set<FilterRule> unique = new LinkedHashSet<>();
         if (newRules != null) {
             for (FilterRule rule : newRules) {
-                if (rule != null && !rules.contains(rule)) {
-                    rules.add(rule);
+                if (rule != null) {
+                    unique.add(rule);
                 }
             }
         }
+        rules.addAll(unique);
         selectedIndex = rules.isEmpty() ? -1 : Math.min(selectedIndex, rules.size() - 1);
     }
 
@@ -69,4 +73,3 @@ public class FilterRulesEditor {
         return true;
     }
 }
-

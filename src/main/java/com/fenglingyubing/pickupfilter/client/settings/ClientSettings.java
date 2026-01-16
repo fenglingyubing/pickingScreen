@@ -1,5 +1,6 @@
 package com.fenglingyubing.pickupfilter.client.settings;
 
+import com.fenglingyubing.pickupfilter.PickupFilterCommon;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,10 +28,14 @@ public class ClientSettings {
         }
 
         Properties properties = new Properties();
+        boolean loadedFromDisk = false;
         if (configFile.exists() && configFile.isFile()) {
             try (FileInputStream inputStream = new FileInputStream(configFile)) {
                 properties.load(inputStream);
-            } catch (Exception ignored) {
+                loadedFromDisk = true;
+            } catch (Exception e) {
+                PickupFilterCommon.LOGGER.warn("Failed to load client settings file: {}", configFile, e);
+                return;
             }
         }
 
@@ -39,7 +44,9 @@ public class ClientSettings {
                 INVENTORY_BUTTON_OFFSET_MIN, INVENTORY_BUTTON_OFFSET_MAX);
         inventoryButtonOffsetY = clampInt(parseInt(properties.getProperty(KEY_INVENTORY_BUTTON_OFFSET_Y, "0"), 0),
                 INVENTORY_BUTTON_OFFSET_MIN, INVENTORY_BUTTON_OFFSET_MAX);
-        save();
+        if (!configFile.exists() || loadedFromDisk) {
+            save();
+        }
     }
 
     public synchronized void save() {
@@ -49,6 +56,7 @@ public class ClientSettings {
 
         File parent = configFile.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            PickupFilterCommon.LOGGER.warn("Failed to create client settings directory: {}", parent);
             return;
         }
 
@@ -58,7 +66,8 @@ public class ClientSettings {
         out.setProperty(KEY_INVENTORY_BUTTON_OFFSET_Y, Integer.toString(inventoryButtonOffsetY));
         try (FileOutputStream outputStream = new FileOutputStream(configFile)) {
             out.store(outputStream, "PickupFilter client settings");
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            PickupFilterCommon.LOGGER.warn("Failed to save client settings file: {}", configFile, e);
         }
     }
 
