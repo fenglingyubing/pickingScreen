@@ -14,12 +14,14 @@ public final class FilterRule {
     private final int metadata;
     private final String modId;
     private final boolean useWildcard;
+    private final Pattern itemNamePattern;
 
     public FilterRule(String modId, String itemName, int metadata, boolean useWildcard) {
         this.modId = normalizePart(modId);
         this.itemName = normalizePart(itemName);
         this.metadata = metadata;
         this.useWildcard = useWildcard;
+        this.itemNamePattern = buildItemNamePattern(this.itemName, useWildcard);
     }
 
     public String getItemName() {
@@ -56,7 +58,7 @@ public final class FilterRule {
         if (!matchesPart(modId, actualModId, false)) {
             return false;
         }
-        if (!matchesPart(itemName, actualItemName, useWildcard)) {
+        if (!matchesItemName(actualItemName)) {
             return false;
         }
 
@@ -86,7 +88,7 @@ public final class FilterRule {
         if (!matchesPart(modId, actualModId, false)) {
             return false;
         }
-        if (!matchesPart(itemName, actualItemName, useWildcard)) {
+        if (!matchesItemName(actualItemName)) {
             return false;
         }
         return this.metadata == ANY_METADATA || this.metadata == metadata;
@@ -190,6 +192,27 @@ public final class FilterRule {
             return ANY;
         }
         return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private static Pattern buildItemNamePattern(String itemName, boolean useWildcard) {
+        if (!useWildcard || itemName == null || !itemName.contains(ANY) || ANY.equals(itemName)) {
+            return null;
+        }
+        String regex = Pattern.quote(itemName).replace("\\*", ".*");
+        return Pattern.compile("^" + regex + "$");
+    }
+
+    private boolean matchesItemName(String actualItemName) {
+        if (itemName == null || ANY.equals(itemName)) {
+            return true;
+        }
+        if (actualItemName == null) {
+            return false;
+        }
+        if (!useWildcard || !itemName.contains(ANY)) {
+            return itemName.equals(actualItemName);
+        }
+        return itemNamePattern != null && itemNamePattern.matcher(actualItemName).matches();
     }
 
     private static boolean matchesPart(String rulePart, String actualPart, boolean wildcardEnabled) {

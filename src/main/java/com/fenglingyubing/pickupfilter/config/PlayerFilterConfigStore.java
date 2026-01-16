@@ -1,6 +1,7 @@
 package com.fenglingyubing.pickupfilter.config;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
@@ -8,11 +9,12 @@ import net.minecraftforge.common.util.Constants;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import net.minecraft.item.ItemStack;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerFilterConfigStore {
     private static final String ROOT_KEY = "pickupfilter";
@@ -22,20 +24,14 @@ public class PlayerFilterConfigStore {
     private static final String KEY_RULES_LEGACY = "rules";
     private static final int MAX_RULES = 200;
 
-    private final Map<UUID, Snapshot> cache = new HashMap<>();
+    private final Map<UUID, Snapshot> cache = new ConcurrentHashMap<>();
 
     public Snapshot getSnapshot(EntityPlayer player) {
         if (player == null) {
             return Snapshot.defaults();
         }
         UUID uuid = player.getUniqueID();
-        Snapshot cached = cache.get(uuid);
-        if (cached != null) {
-            return cached;
-        }
-        Snapshot loaded = loadSnapshot(player);
-        cache.put(uuid, loaded);
-        return loaded;
+        return cache.computeIfAbsent(uuid, key -> loadSnapshot(player));
     }
 
     public FilterMode getMode(EntityPlayer player) {
@@ -170,22 +166,24 @@ public class PlayerFilterConfigStore {
         }
 
         List<FilterRule> pickupRules = new ArrayList<>();
+        Set<FilterRule> pickupSeen = new LinkedHashSet<>();
         if (root.hasKey(KEY_RULES_PICKUP, Constants.NBT.TAG_LIST)) {
             NBTTagList list = root.getTagList(KEY_RULES_PICKUP, Constants.NBT.TAG_STRING);
             for (int i = 0; i < list.tagCount(); i++) {
                 FilterRule rule = FilterRule.deserialize(list.getStringTagAt(i));
-                if (rule != null && !pickupRules.contains(rule)) {
+                if (rule != null && pickupSeen.add(rule)) {
                     pickupRules.add(rule);
                 }
             }
         }
 
         List<FilterRule> destroyRules = new ArrayList<>();
+        Set<FilterRule> destroySeen = new LinkedHashSet<>();
         if (root.hasKey(KEY_RULES_DESTROY, Constants.NBT.TAG_LIST)) {
             NBTTagList list = root.getTagList(KEY_RULES_DESTROY, Constants.NBT.TAG_STRING);
             for (int i = 0; i < list.tagCount(); i++) {
                 FilterRule rule = FilterRule.deserialize(list.getStringTagAt(i));
-                if (rule != null && !destroyRules.contains(rule)) {
+                if (rule != null && destroySeen.add(rule)) {
                     destroyRules.add(rule);
                 }
             }
@@ -195,7 +193,7 @@ public class PlayerFilterConfigStore {
             NBTTagList legacy = root.getTagList(KEY_RULES_LEGACY, Constants.NBT.TAG_STRING);
             for (int i = 0; i < legacy.tagCount(); i++) {
                 FilterRule rule = FilterRule.deserialize(legacy.getStringTagAt(i));
-                if (rule != null && !pickupRules.contains(rule)) {
+                if (rule != null && pickupSeen.add(rule)) {
                     pickupRules.add(rule);
                 }
             }
@@ -237,14 +235,16 @@ public class PlayerFilterConfigStore {
     }
 
     private static List<FilterRule> normalizeRules(List<FilterRule> rules) {
-        List<FilterRule> normalized = new ArrayList<>();
-        if (rules != null) {
-            for (FilterRule rule : rules) {
-                if (rule != null && !normalized.contains(rule)) {
-                    normalized.add(rule);
-                }
+        if (rules == null || rules.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LinkedHashSet<FilterRule> unique = new LinkedHashSet<>();
+        for (FilterRule rule : rules) {
+            if (rule != null) {
+                unique.add(rule);
             }
         }
+        List<FilterRule> normalized = new ArrayList<>(unique);
         if (normalized.size() > MAX_RULES) {
             normalized = normalized.subList(0, MAX_RULES);
         }
