@@ -1,51 +1,58 @@
 package com.fenglingyubing.pickupfilter.settings;
 
-import com.fenglingyubing.pickupfilter.event.DropClearArea;
-import org.junit.Test;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 public class CommonSettingsTest {
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
 
     @Test
-    public void clearDropsChunkRadius_defaultsAndPersists() throws Exception {
-        Path tempDir = Files.createTempDirectory("pickupfilter-common-settings");
-        File file = tempDir.resolve("pickupfilter-common.properties").toFile();
+    public void loadsAndClampsAutoDestroySettings() throws Exception {
+        File config = temp.newFile("pickupfilter-common.properties");
 
-        CommonSettings settings = new CommonSettings(file);
+        Properties properties = new Properties();
+        properties.setProperty("auto_destroy.scan_interval.min_ticks", "0");
+        properties.setProperty("auto_destroy.scan_interval.max_ticks", "500");
+        properties.setProperty("auto_destroy.scan.max_entities", "-1");
+        properties.setProperty("auto_destroy.scan_backoff.empty_miss_threshold", "0");
+
+        try (FileOutputStream out = new FileOutputStream(config)) {
+            properties.store(out, "test");
+        }
+
+        CommonSettings settings = new CommonSettings(config);
         settings.load();
-        assertEquals(DropClearArea.DEFAULT_CHUNK_RADIUS, settings.getClearDropsChunkRadius());
 
-        CommonSettings reloaded = new CommonSettings(file);
-        reloaded.load();
-        assertEquals(DropClearArea.DEFAULT_CHUNK_RADIUS, reloaded.getClearDropsChunkRadius());
+        assertEquals(1, settings.getAutoDestroyScanMinIntervalTicks());
+        assertEquals(200, settings.getAutoDestroyScanMaxIntervalTicks());
+        assertEquals(0, settings.getAutoDestroyScanMaxEntities());
+        assertEquals(1, settings.getAutoDestroyEmptyBackoffMissThreshold());
     }
 
     @Test
-    public void clearDropsChunkRadius_isClamped() throws Exception {
-        Path tempDir = Files.createTempDirectory("pickupfilter-common-settings-clamp");
-        Path file = tempDir.resolve("pickupfilter-common.properties");
+    public void clampsMaxIntervalToBeAtLeastMinInterval() throws Exception {
+        File config = temp.newFile("pickupfilter-common.properties");
 
-        Files.write(
-                file,
-                ("clear_drops.chunk_radius=999\n").getBytes(StandardCharsets.UTF_8)
-        );
-        CommonSettings settings = new CommonSettings(file.toFile());
+        Properties properties = new Properties();
+        properties.setProperty("auto_destroy.scan_interval.min_ticks", "10");
+        properties.setProperty("auto_destroy.scan_interval.max_ticks", "5");
+
+        try (FileOutputStream out = new FileOutputStream(config)) {
+            properties.store(out, "test");
+        }
+
+        CommonSettings settings = new CommonSettings(config);
         settings.load();
-        assertEquals(16, settings.getClearDropsChunkRadius());
 
-        Files.write(
-                file,
-                ("clear_drops.chunk_radius=-10\n").getBytes(StandardCharsets.UTF_8)
-        );
-        CommonSettings settings2 = new CommonSettings(file.toFile());
-        settings2.load();
-        assertEquals(0, settings2.getClearDropsChunkRadius());
+        assertEquals(10, settings.getAutoDestroyScanMinIntervalTicks());
+        assertEquals(10, settings.getAutoDestroyScanMaxIntervalTicks());
     }
 }
 

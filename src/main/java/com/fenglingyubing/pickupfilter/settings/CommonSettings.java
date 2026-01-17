@@ -12,8 +12,24 @@ public class CommonSettings {
     private static final int CLEAR_DROPS_CHUNK_RADIUS_MIN = 0;
     private static final int CLEAR_DROPS_CHUNK_RADIUS_MAX = 16;
 
+    private static final String KEY_AUTO_DESTROY_SCAN_MIN_INTERVAL_TICKS = "auto_destroy.scan_interval.min_ticks";
+    private static final String KEY_AUTO_DESTROY_SCAN_MAX_INTERVAL_TICKS = "auto_destroy.scan_interval.max_ticks";
+    private static final String KEY_AUTO_DESTROY_SCAN_MAX_ENTITIES = "auto_destroy.scan.max_entities";
+    private static final String KEY_AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD = "auto_destroy.scan_backoff.empty_miss_threshold";
+
+    private static final int AUTO_DESTROY_SCAN_INTERVAL_TICKS_MIN = 1;
+    private static final int AUTO_DESTROY_SCAN_INTERVAL_TICKS_MAX = 200;
+    private static final int AUTO_DESTROY_SCAN_MAX_ENTITIES_MIN = 0;
+    private static final int AUTO_DESTROY_SCAN_MAX_ENTITIES_MAX = 10000;
+    private static final int AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD_MIN = 1;
+    private static final int AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD_MAX = 20;
+
     private final File configFile;
     private int clearDropsChunkRadius = DropClearArea.DEFAULT_CHUNK_RADIUS;
+    private int autoDestroyScanMinIntervalTicks = 5;
+    private int autoDestroyScanMaxIntervalTicks = 5;
+    private int autoDestroyScanMaxEntities = 0;
+    private int autoDestroyEmptyBackoffMissThreshold = 2;
 
     public CommonSettings(File configFile) {
         this.configFile = configFile;
@@ -43,6 +59,31 @@ public class CommonSettings {
                 CLEAR_DROPS_CHUNK_RADIUS_MAX
         );
 
+        autoDestroyScanMinIntervalTicks = clampInt(
+                parseInt(properties.getProperty(KEY_AUTO_DESTROY_SCAN_MIN_INTERVAL_TICKS, Integer.toString(autoDestroyScanMinIntervalTicks)),
+                        autoDestroyScanMinIntervalTicks),
+                AUTO_DESTROY_SCAN_INTERVAL_TICKS_MIN,
+                AUTO_DESTROY_SCAN_INTERVAL_TICKS_MAX
+        );
+        autoDestroyScanMaxIntervalTicks = clampInt(
+                parseInt(properties.getProperty(KEY_AUTO_DESTROY_SCAN_MAX_INTERVAL_TICKS, Integer.toString(autoDestroyScanMaxIntervalTicks)),
+                        autoDestroyScanMaxIntervalTicks),
+                autoDestroyScanMinIntervalTicks,
+                AUTO_DESTROY_SCAN_INTERVAL_TICKS_MAX
+        );
+        autoDestroyScanMaxEntities = clampInt(
+                parseInt(properties.getProperty(KEY_AUTO_DESTROY_SCAN_MAX_ENTITIES, Integer.toString(autoDestroyScanMaxEntities)),
+                        autoDestroyScanMaxEntities),
+                AUTO_DESTROY_SCAN_MAX_ENTITIES_MIN,
+                AUTO_DESTROY_SCAN_MAX_ENTITIES_MAX
+        );
+        autoDestroyEmptyBackoffMissThreshold = clampInt(
+                parseInt(properties.getProperty(KEY_AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD, Integer.toString(autoDestroyEmptyBackoffMissThreshold)),
+                        autoDestroyEmptyBackoffMissThreshold),
+                AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD_MIN,
+                AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD_MAX
+        );
+
         if (!configFile.exists() || loadedFromDisk) {
             save();
         }
@@ -61,6 +102,10 @@ public class CommonSettings {
 
         Properties out = new Properties();
         out.setProperty(KEY_CLEAR_DROPS_CHUNK_RADIUS, Integer.toString(clearDropsChunkRadius));
+        out.setProperty(KEY_AUTO_DESTROY_SCAN_MIN_INTERVAL_TICKS, Integer.toString(autoDestroyScanMinIntervalTicks));
+        out.setProperty(KEY_AUTO_DESTROY_SCAN_MAX_INTERVAL_TICKS, Integer.toString(autoDestroyScanMaxIntervalTicks));
+        out.setProperty(KEY_AUTO_DESTROY_SCAN_MAX_ENTITIES, Integer.toString(autoDestroyScanMaxEntities));
+        out.setProperty(KEY_AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD, Integer.toString(autoDestroyEmptyBackoffMissThreshold));
         try (FileOutputStream outputStream = new FileOutputStream(configFile)) {
             out.store(outputStream, "PickupFilter common settings");
         } catch (Exception e) {
@@ -80,6 +125,22 @@ public class CommonSettings {
     public synchronized void resetClearDropsChunkRadius() {
         clearDropsChunkRadius = DropClearArea.DEFAULT_CHUNK_RADIUS;
         save();
+    }
+
+    public synchronized int getAutoDestroyScanMinIntervalTicks() {
+        return autoDestroyScanMinIntervalTicks;
+    }
+
+    public synchronized int getAutoDestroyScanMaxIntervalTicks() {
+        return autoDestroyScanMaxIntervalTicks;
+    }
+
+    public synchronized int getAutoDestroyScanMaxEntities() {
+        return autoDestroyScanMaxEntities;
+    }
+
+    public synchronized int getAutoDestroyEmptyBackoffMissThreshold() {
+        return autoDestroyEmptyBackoffMissThreshold;
     }
 
     private static int parseInt(String value, int fallback) {

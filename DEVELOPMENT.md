@@ -14,6 +14,15 @@
 - 打包发布 Jar：`./gradlew reobfJar`（产物在 `build/libs/`）
 - 运行开发客户端：`./gradlew runClient`
 
+## 性能调参（服务端）
+
+通用配置文件：`config/pickupfilter-common.properties`（首次运行会自动生成/补全）。
+
+- 扫描最小间隔（默认 `5`）：`auto_destroy.scan_interval.min_ticks`
+- 扫描最大间隔（默认 `5`，与最小相同表示不启用退避）：`auto_destroy.scan_interval.max_ticks`
+- 空区域退避阈值（默认 `2`，仅当 `max > min` 时生效）：`auto_destroy.scan_backoff.empty_miss_threshold`
+- 单次扫描实体上限（默认 `0` 表示不限制）：`auto_destroy.scan.max_entities`
+
 ## 变更提交流程（建议）
 
 - 拉取远程最新：`git fetch origin`（必要时 `git pull --rebase`），确认 `DEVELOPMENT.md` 是否为最新
