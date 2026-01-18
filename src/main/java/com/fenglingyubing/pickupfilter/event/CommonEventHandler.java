@@ -5,16 +5,23 @@ import com.fenglingyubing.pickupfilter.config.FilterMode;
 import com.fenglingyubing.pickupfilter.config.FilterRule;
 import com.fenglingyubing.pickupfilter.config.PlayerFilterConfigStore;
 import com.fenglingyubing.pickupfilter.settings.CommonSettings;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +47,8 @@ public class CommonEventHandler {
         EntityItem entityItem = event.getItem();
         ItemStack item = entityItem == null ? ItemStack.EMPTY : entityItem.getItem();
 
-        boolean matchesFilter = matchesFilter(player, item);
+        List<FilterRule> rules = configStore.getRulesForMode(player, mode);
+        boolean matchesFilter = matchesAnyRule(rules, item);
         if (ItemActionPolicy.shouldCancelPickup(mode, matchesFilter)) {
             event.setCanceled(true);
         }
@@ -77,12 +85,11 @@ public class CommonEventHandler {
         UUID playerId = player.getUniqueID();
         AutoDestroyState state = autoDestroyStates.get(playerId);
         if (state == null) {
-            state = new AutoDestroyState(minIntervalTicks, player.ticksExisted, rulesForMode.hashCode(), player.posX, player.posY, player.posZ);
+            state = new AutoDestroyState(minIntervalTicks, player.ticksExisted, rulesForMode, player.posX, player.posY, player.posZ);
             autoDestroyStates.put(playerId, state);
         }
 
-        int rulesHash = rulesForMode.hashCode();
-        boolean rulesChanged = rulesHash != state.lastRulesHash;
+        boolean rulesChanged = rulesForMode != state.lastRulesRef;
         boolean movedSinceLastScan = state.hasLastPos && squaredDistance(player.posX, player.posY, player.posZ, state.lastPosX, state.lastPosY, state.lastPosZ) > 1.0E-6D;
 
         int currentTick = player.ticksExisted;
@@ -103,34 +110,29 @@ public class CommonEventHandler {
         }
 
         AxisAlignedBB scanBox = player.getEntityBoundingBox().grow(AUTO_DESTROY_RANGE);
-        List<EntityItem> nearbyDrops = player.world.getEntitiesWithinAABB(EntityItem.class, scanBox);
+        List<EntityItem> nearbyDrops = getEntitiesWithinAABB(player, scanBox, maxEntities);
         int destroyed = 0;
-        int processed = 0;
         for (EntityItem drop : nearbyDrops) {
-            if (maxEntities > 0 && processed >= maxEntities) {
-                break;
-            }
             if (drop == null || drop.isDead) {
                 continue;
             }
 
             ItemStack item = drop.getItem();
-            if (ItemActionPolicy.shouldDestroyDrop(mode, matchesFilter(player, item))) {
+            if (ItemActionPolicy.shouldDestroyDrop(mode, matchesAnyRule(rulesForMode, item))) {
                 drop.setDead();
                 destroyed++;
             }
-            processed++;
         }
 
         state.lastScanTick = currentTick;
-        state.lastRulesHash = rulesHash;
+        state.lastRulesRef = rulesForMode;
         state.lastPosX = player.posX;
         state.lastPosY = player.posY;
         state.lastPosZ = player.posZ;
         state.hasLastPos = true;
 
-        boolean sawDrops = nearbyDrops != null && !nearbyDrops.isEmpty();
-        boolean hitEntityCap = maxEntities > 0 && nearbyDrops != null && nearbyDrops.size() > maxEntities;
+        boolean sawDrops = !nearbyDrops.isEmpty();
+        boolean hitEntityCap = maxEntities > 0 && nearbyDrops.size() >= maxEntities;
 
         if (destroyed > 0 || sawDrops || hitEntityCap) {
             state.currentIntervalTicks = minIntervalTicks;
@@ -177,11 +179,69 @@ public class CommonEventHandler {
         autoDestroyStates.remove(event.player.getUniqueID());
     }
 
-    private boolean matchesFilter(EntityPlayer player, ItemStack item) {
+    private static boolean matchesAnyRule(List<FilterRule> rules, ItemStack item) {
         if (item == null || item.isEmpty() || item.getItem() == null) {
             return false;
         }
-        return configStore.matchesAnyRule(player, item);
+        if (rules == null || rules.isEmpty()) {
+            return false;
+        }
+        for (FilterRule rule : rules) {
+            if (rule != null && rule.matches(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<EntityItem> getEntitiesWithinAABB(EntityPlayer player, AxisAlignedBB box, int maxEntities) {
+        if (player == null || player.world == null) {
+            return new ArrayList<>();
+        }
+        if (maxEntities <= 0) {
+            return player.world.getEntitiesWithinAABB(EntityItem.class, box);
+        }
+        if (!(player.world instanceof WorldServer)) {
+            List<EntityItem> all = player.world.getEntitiesWithinAABB(EntityItem.class, box);
+            if (all.size() <= maxEntities) {
+                return all;
+            }
+            return new ArrayList<>(all.subList(0, maxEntities));
+        }
+
+        WorldServer worldServer = (WorldServer) player.world;
+        ChunkProviderServer chunkProvider = worldServer.getChunkProvider();
+        int minChunkX = MathHelper.floor(box.minX) >> 4;
+        int maxChunkX = MathHelper.floor(box.maxX) >> 4;
+        int minChunkZ = MathHelper.floor(box.minZ) >> 4;
+        int maxChunkZ = MathHelper.floor(box.maxZ) >> 4;
+
+        ArrayList<EntityItem> result = new ArrayList<>(Math.min(maxEntities, 64));
+        for (int chunkX = minChunkX; chunkX <= maxChunkX && result.size() < maxEntities; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ && result.size() < maxEntities; chunkZ++) {
+                Chunk chunk = chunkProvider.getLoadedChunk(chunkX, chunkZ);
+                if (chunk == null) {
+                    continue;
+                }
+                for (ClassInheritanceMultiMap<Entity> slice : chunk.getEntityLists()) {
+                    for (EntityItem item : slice.getByClass(EntityItem.class)) {
+                        if (item == null || item.isDead) {
+                            continue;
+                        }
+                        if (item.getEntityBoundingBox() != null && item.getEntityBoundingBox().intersects(box)) {
+                            result.add(item);
+                            if (result.size() >= maxEntities) {
+                                break;
+                            }
+                        }
+                    }
+                    if (result.size() >= maxEntities) {
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     private static double squaredDistance(double x1, double y1, double z1, double x2, double y2, double z2) {
@@ -195,17 +255,17 @@ public class CommonEventHandler {
         private int currentIntervalTicks;
         private int nextScanTick;
         private int emptyMissStreak;
-        private int lastRulesHash;
+        private List<FilterRule> lastRulesRef;
         private int lastScanTick = Integer.MIN_VALUE;
         private boolean hasLastPos;
         private double lastPosX;
         private double lastPosY;
         private double lastPosZ;
 
-        private AutoDestroyState(int minIntervalTicks, int currentTick, int rulesHash, double posX, double posY, double posZ) {
+        private AutoDestroyState(int minIntervalTicks, int currentTick, List<FilterRule> rulesRef, double posX, double posY, double posZ) {
             this.currentIntervalTicks = minIntervalTicks;
             this.nextScanTick = currentTick;
-            this.lastRulesHash = rulesHash;
+            this.lastRulesRef = rulesRef;
             this.lastPosX = posX;
             this.lastPosY = posY;
             this.lastPosZ = posZ;

@@ -25,11 +25,11 @@ public class CommonSettings {
     private static final int AUTO_DESTROY_EMPTY_BACKOFF_MISS_THRESHOLD_MAX = 20;
 
     private final File configFile;
-    private int clearDropsChunkRadius = DropClearArea.DEFAULT_CHUNK_RADIUS;
-    private int autoDestroyScanMinIntervalTicks = 5;
-    private int autoDestroyScanMaxIntervalTicks = 5;
-    private int autoDestroyScanMaxEntities = 0;
-    private int autoDestroyEmptyBackoffMissThreshold = 2;
+    private volatile int clearDropsChunkRadius = DropClearArea.DEFAULT_CHUNK_RADIUS;
+    private volatile int autoDestroyScanMinIntervalTicks = 5;
+    private volatile int autoDestroyScanMaxIntervalTicks = 5;
+    private volatile int autoDestroyScanMaxEntities = 0;
+    private volatile int autoDestroyEmptyBackoffMissThreshold = 2;
 
     public CommonSettings(File configFile) {
         this.configFile = configFile;
@@ -113,7 +113,7 @@ public class CommonSettings {
         }
     }
 
-    public synchronized int getClearDropsChunkRadius() {
+    public int getClearDropsChunkRadius() {
         return clearDropsChunkRadius;
     }
 
@@ -127,19 +127,19 @@ public class CommonSettings {
         save();
     }
 
-    public synchronized int getAutoDestroyScanMinIntervalTicks() {
+    public int getAutoDestroyScanMinIntervalTicks() {
         return autoDestroyScanMinIntervalTicks;
     }
 
-    public synchronized int getAutoDestroyScanMaxIntervalTicks() {
+    public int getAutoDestroyScanMaxIntervalTicks() {
         return autoDestroyScanMaxIntervalTicks;
     }
 
-    public synchronized int getAutoDestroyScanMaxEntities() {
+    public int getAutoDestroyScanMaxEntities() {
         return autoDestroyScanMaxEntities;
     }
 
-    public synchronized int getAutoDestroyEmptyBackoffMissThreshold() {
+    public int getAutoDestroyEmptyBackoffMissThreshold() {
         return autoDestroyEmptyBackoffMissThreshold;
     }
 
