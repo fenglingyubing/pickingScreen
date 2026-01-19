@@ -16,18 +16,27 @@ public final class PickupFilterCommon {
         if (commonSettings != null) {
             return;
         }
-
-        File dir = configDir == null ? new File(".") : configDir;
-        CommonSettings settings = new CommonSettings(new File(dir, "pickupfilter-common.properties"));
-        settings.load();
-        commonSettings = settings;
+        synchronized (PickupFilterCommon.class) {
+            if (commonSettings != null) {
+                return;
+            }
+            File dir = configDir == null ? new File(".") : configDir;
+            CommonSettings settings = new CommonSettings(new File(dir, "pickupfilter-common.properties"));
+            settings.load();
+            commonSettings = settings;
+        }
     }
 
     public static CommonSettings getCommonSettings() {
         CommonSettings settings = commonSettings;
         if (settings == null) {
-            settings = new CommonSettings(null);
-            commonSettings = settings;
+            synchronized (PickupFilterCommon.class) {
+                settings = commonSettings;
+                if (settings == null) {
+                    settings = new CommonSettings(null);
+                    commonSettings = settings;
+                }
+            }
         }
         return settings;
     }

@@ -462,10 +462,18 @@ public class InventoryGuiButtonHandler {
             }
             try {
                 Field field = target.getClass().getDeclaredField(fieldName);
-                field.setAccessible(true);
-                Object value = field.get(target);
-                if (value instanceof Integer) {
-                    return (Integer) value;
+                boolean oldAccessible = field.isAccessible();
+                try {
+                    field.setAccessible(true);
+                    Object value = field.get(target);
+                    if (value instanceof Integer) {
+                        return (Integer) value;
+                    }
+                } finally {
+                    try {
+                        field.setAccessible(oldAccessible);
+                    } catch (Exception ignored) {
+                    }
                 }
             } catch (Exception ignored) {
             }
@@ -477,10 +485,25 @@ public class InventoryGuiButtonHandler {
         try {
             Field xSizeField = GuiContainer.class.getDeclaredField("xSize");
             Field ySizeField = GuiContainer.class.getDeclaredField("ySize");
-            xSizeField.setAccessible(true);
-            ySizeField.setAccessible(true);
-            int xSize = (int) xSizeField.get(gui);
-            int ySize = (int) ySizeField.get(gui);
+            boolean oldXAccessible = xSizeField.isAccessible();
+            boolean oldYAccessible = ySizeField.isAccessible();
+            int xSize;
+            int ySize;
+            try {
+                xSizeField.setAccessible(true);
+                ySizeField.setAccessible(true);
+                xSize = (int) xSizeField.get(gui);
+                ySize = (int) ySizeField.get(gui);
+            } finally {
+                try {
+                    xSizeField.setAccessible(oldXAccessible);
+                } catch (Exception ignored) {
+                }
+                try {
+                    ySizeField.setAccessible(oldYAccessible);
+                } catch (Exception ignored) {
+                }
+            }
             if (xSize <= 0 || ySize <= 0) {
                 return null;
             }
