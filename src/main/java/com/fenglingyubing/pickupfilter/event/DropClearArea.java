@@ -10,6 +10,12 @@ public final class DropClearArea {
     public static final int DEFAULT_CHUNK_RADIUS = 2;
 
     public static AxisAlignedBB chunkRadiusArea(EntityPlayer player, int chunkRadius) {
+        if (player == null) {
+            return new AxisAlignedBB(0, 0, 0, 0, 256, 0);
+        }
+        if (chunkRadius < 0) {
+            chunkRadius = 0;
+        }
         int chunkX = player.chunkCoordX;
         int chunkZ = player.chunkCoordZ;
 
@@ -22,4 +28,3 @@ public final class DropClearArea {
         return new AxisAlignedBB(minX, 0, minZ, maxX + 1D, maxY, maxZ + 1D);
     }
 }
-

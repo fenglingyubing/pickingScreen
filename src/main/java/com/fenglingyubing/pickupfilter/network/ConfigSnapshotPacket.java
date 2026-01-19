@@ -9,7 +9,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -108,29 +112,28 @@ public class ConfigSnapshotPacket implements IMessage {
         if (buf == null) {
             return;
         }
-        byte[] bytes = (value == null ? "" : value).getBytes(StandardCharsets.UTF_8);
-        if (maxBytes >= 0 && bytes.length > maxBytes) {
-            String truncated = new String(bytes, 0, maxBytes, StandardCharsets.UTF_8);
-            bytes = truncated.getBytes(StandardCharsets.UTF_8);
-        }
+        byte[] bytes = utf8BytesTruncated(value == null ? "" : value, maxBytes);
         buf.writeInt(bytes.length);
         buf.writeBytes(bytes);
     }
 
     static String readString(ByteBuf buf, int maxBytes) {
         if (buf == null || buf.readableBytes() < 4) {
-            return "";
+            return null;
         }
         int len = buf.readInt();
+        if (len == 0) {
+            return "";
+        }
         if (len < 0 || len > maxBytes) {
-            buf.skipBytes(Math.max(0, Math.min(len, buf.readableBytes())));
-            return "";
+            buf.skipBytes(Math.min(Math.max(len, 0), buf.readableBytes()));
+            return null;
         }
-        int available = Math.min(len, buf.readableBytes());
-        if (available <= 0) {
-            return "";
+        if (buf.readableBytes() < len) {
+            buf.skipBytes(buf.readableBytes());
+            return null;
         }
-        byte[] bytes = new byte[available];
+        byte[] bytes = new byte[len];
         buf.readBytes(bytes);
         return new String(bytes, StandardCharsets.UTF_8);
     }
@@ -144,5 +147,28 @@ public class ConfigSnapshotPacket implements IMessage {
             return 0;
         }
         return Math.min(value, maxValue);
+    }
+
+    private static byte[] utf8BytesTruncated(String value, int maxBytes) {
+        if (value == null || value.isEmpty()) {
+            return new byte[0];
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        if (maxBytes < 0 || bytes.length <= maxBytes) {
+            return bytes;
+        }
+        if (maxBytes == 0) {
+            return new byte[0];
+        }
+        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+        ByteBuffer out = ByteBuffer.allocate(maxBytes);
+        encoder.encode(CharBuffer.wrap(value), out, true);
+        encoder.flush(out);
+        byte[] truncated = new byte[out.position()];
+        out.flip();
+        out.get(truncated);
+        return truncated;
     }
 }
